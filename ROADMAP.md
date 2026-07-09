@@ -19,7 +19,7 @@ criteria pass end-to-end.
 
 ---
 
-## Phase 1 — Real audio pipeline (production-grade transcription) ✅ (done — pending live Sarvam key verification)
+## Phase 1 — Real audio pipeline (production-grade transcription) ✅ (done — Sarvam verified live: TTS→STT round-trip + 73s chunked pipeline)
 
 *Make real recordings work as well as the demo does.*
 
