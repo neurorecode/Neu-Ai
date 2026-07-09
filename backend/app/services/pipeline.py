@@ -124,27 +124,38 @@ async def process_meeting_job(meeting_id: str) -> None:
         meeting.stage = "Writing summary"
         db.commit()
 
-        # 5. Summarize with Claude (respecting workspace preferences)
+        # 5. Summarize with Claude (respecting workspace preferences). A summary
+        # failure (e.g. no API credits, rate limit) must NOT discard the
+        # transcript — that's the expensive part and it already succeeded. Mark
+        # the meeting completed and let the user re-summarize once resolved.
         db.refresh(meeting)
         workspace = meeting.workspace
-        summary_data = await summarize_meeting(
-            meeting.segments,
-            summary_language=workspace.summary_language if workspace else "both",
-            vocabulary=workspace.custom_vocabulary if workspace else None,
-        )
-        db.add(
-            Summary(
-                meeting_id=meeting.id,
-                overview_en=summary_data.get("overview_en"),
-                overview_ta=summary_data.get("overview_ta"),
-                key_points=summary_data.get("key_points"),
-                action_items=summary_data.get("action_items"),
-                decisions=summary_data.get("decisions"),
-                topics=summary_data.get("topics"),
-                sentiment=summary_data.get("sentiment"),
-                language_breakdown=breakdown,
+        try:
+            summary_data = await summarize_meeting(
+                meeting.segments,
+                summary_language=workspace.summary_language if workspace else "both",
+                vocabulary=workspace.custom_vocabulary if workspace else None,
             )
-        )
+            db.add(
+                Summary(
+                    meeting_id=meeting.id,
+                    overview_en=summary_data.get("overview_en"),
+                    overview_ta=summary_data.get("overview_ta"),
+                    key_points=summary_data.get("key_points"),
+                    action_items=summary_data.get("action_items"),
+                    decisions=summary_data.get("decisions"),
+                    topics=summary_data.get("topics"),
+                    sentiment=summary_data.get("sentiment"),
+                    language_breakdown=breakdown,
+                )
+            )
+            meeting.error = None
+        except Exception as exc:
+            logger.warning("Summarization failed for %s (transcript kept): %s", meeting_id, exc)
+            meeting.error = (
+                f"Transcript is ready, but the AI summary couldn't be generated: {exc}. "
+                "Resolve the issue, then click Re-summarize."
+            )[:1500]
         meeting.status = "completed"
         meeting.progress = 100
         meeting.stage = None
@@ -173,30 +184,38 @@ async def summarize_meeting_job(meeting_id: str) -> None:
         db.refresh(meeting)
 
         workspace = meeting.workspace
-        summary_data = await summarize_meeting(
-            meeting.segments,
-            summary_language=workspace.summary_language if workspace else "both",
-            vocabulary=workspace.custom_vocabulary if workspace else None,
-        )
-        languages = [s.language for s in meeting.segments if s.language]
-        from .language import language_breakdown as breakdown_fn
-
-        if meeting.summary:
-            db.delete(meeting.summary)
-            db.flush()
-        db.add(
-            Summary(
-                meeting_id=meeting.id,
-                overview_en=summary_data.get("overview_en"),
-                overview_ta=summary_data.get("overview_ta"),
-                key_points=summary_data.get("key_points"),
-                action_items=summary_data.get("action_items"),
-                decisions=summary_data.get("decisions"),
-                topics=summary_data.get("topics"),
-                sentiment=summary_data.get("sentiment"),
-                language_breakdown=breakdown_fn(languages),
+        try:
+            summary_data = await summarize_meeting(
+                meeting.segments,
+                summary_language=workspace.summary_language if workspace else "both",
+                vocabulary=workspace.custom_vocabulary if workspace else None,
             )
-        )
+            languages = [s.language for s in meeting.segments if s.language]
+            from .language import language_breakdown as breakdown_fn
+
+            if meeting.summary:
+                db.delete(meeting.summary)
+                db.flush()
+            db.add(
+                Summary(
+                    meeting_id=meeting.id,
+                    overview_en=summary_data.get("overview_en"),
+                    overview_ta=summary_data.get("overview_ta"),
+                    key_points=summary_data.get("key_points"),
+                    action_items=summary_data.get("action_items"),
+                    decisions=summary_data.get("decisions"),
+                    topics=summary_data.get("topics"),
+                    sentiment=summary_data.get("sentiment"),
+                    language_breakdown=breakdown_fn(languages),
+                )
+            )
+            meeting.error = None
+        except Exception as exc:
+            logger.warning("Re-summarization failed for %s (transcript kept): %s", meeting_id, exc)
+            meeting.error = (
+                f"Transcript is ready, but the AI summary couldn't be generated: {exc}. "
+                "Resolve the issue, then click Re-summarize."
+            )[:1500]
         meeting.status = "completed"
         meeting.progress = 100
         meeting.stage = None

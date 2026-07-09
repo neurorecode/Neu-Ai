@@ -108,6 +108,9 @@ export function MeetingView({
           Processing failed: {meeting.error ?? "unknown error"}
         </div>
       )}
+      {meeting.status === "completed" && meeting.error && (
+        <div className="notice-banner">{meeting.error}</div>
+      )}
 
       {processing && (
         <div className="processing-banner">
