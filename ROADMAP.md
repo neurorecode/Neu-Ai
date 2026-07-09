@@ -51,7 +51,7 @@ Tamil/Tanglish recordings for testing.
 
 ---
 
-## Phase 2 — Users, teams & durable storage
+## Phase 2 — Users, teams & durable storage ✅ (done — pending first VPS deploy)
 
 *From single-user demo to multi-user product.*
 

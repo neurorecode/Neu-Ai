@@ -29,6 +29,19 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./data/neu.db"
     upload_dir: str = "./data/uploads"
 
+    # ---- Auth (Google sign-in) ----
+    # When google_client_id is empty, the app runs in single-user dev mode:
+    # every request is auto-authenticated as dev@localhost.
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    secret_key: str = "dev-insecure-secret-change-me"
+    backend_url: str = "http://localhost:8000"   # public URL of the API (OAuth redirect base)
+    frontend_url: str = "http://localhost:5173"  # where to send the browser after login
+    session_days: int = 14
+    # Optional extra guard on top of Google's Internal-audience setting:
+    # comma-separated email domains allowed to sign in (empty = allow all)
+    auth_allowed_email_domains: str = ""
+
 
 settings = Settings()
 

@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .database import Base, engine, run_sqlite_auto_migrations
-from .routers import chat, meetings
+from .routers import auth, chat, meetings, workspaces
 from .services.jobs import recover_stale_jobs, worker_loop
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
@@ -44,7 +44,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
+app.include_router(workspaces.router)
+app.include_router(workspaces.accept_router)
 app.include_router(meetings.router)
+app.include_router(meetings.shared_router)
 app.include_router(chat.router)
 
 

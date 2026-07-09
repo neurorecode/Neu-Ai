@@ -91,7 +91,30 @@ def _format_transcript(segments) -> str:
     return "\n".join(lines)
 
 
-async def summarize_meeting(segments) -> dict:
+def _preferences_note(summary_language: str, vocabulary: list | None) -> str:
+    notes = []
+    if summary_language == "en":
+        notes.append(
+            "Workspace preference: write key_points, decisions, and action items in English "
+            "(overview_ta must still be provided in Tamil)."
+        )
+    elif summary_language == "ta":
+        notes.append(
+            "Workspace preference: write key_points, decisions, and action items in Tamil script "
+            "(overview_en must still be provided in English)."
+        )
+    if vocabulary:
+        terms = ", ".join(str(v) for v in vocabulary[:200])
+        notes.append(
+            "Custom vocabulary — these are correct spellings of names/terms used by this team; "
+            f"prefer them when the transcript has near-matches: {terms}"
+        )
+    return ("\n\n" + "\n".join(notes)) if notes else ""
+
+
+async def summarize_meeting(
+    segments, summary_language: str = "both", vocabulary: list | None = None
+) -> dict:
     """Return the summary dict matching SUMMARY_SCHEMA."""
     if not settings.anthropic_api_key:
         return {
@@ -116,7 +139,7 @@ async def summarize_meeting(segments) -> dict:
     async with client.messages.stream(
         model=settings.anthropic_model,
         max_tokens=8192,
-        system=SYSTEM_PROMPT,
+        system=SYSTEM_PROMPT + _preferences_note(summary_language, vocabulary),
         thinking={"type": "adaptive"},
         output_config={"format": {"type": "json_schema", "schema": SUMMARY_SCHEMA}},
         messages=[

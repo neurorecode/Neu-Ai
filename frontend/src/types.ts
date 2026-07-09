@@ -57,6 +57,35 @@ export interface ChatMessage {
   created_at: string;
 }
 
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  picture: string | null;
+}
+
+export interface Workspace {
+  id: string;
+  name: string;
+  summary_language: "en" | "ta" | "both";
+  custom_vocabulary: string[] | null;
+  role: "owner" | "member" | "viewer" | null;
+}
+
+export interface Member {
+  id: string;
+  role: string;
+  user: User;
+}
+
+export interface Invite {
+  id: string;
+  email: string;
+  role: string;
+  token: string;
+  accepted_at: string | null;
+}
+
 export interface SearchHit {
   meeting_id: string;
   meeting_title: string;

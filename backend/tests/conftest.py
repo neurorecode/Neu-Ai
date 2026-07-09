@@ -13,6 +13,10 @@ os.environ["STT_PROVIDER"] = "mock"
 os.environ["ANTHROPIC_API_KEY"] = ""
 os.environ["LANGUAGE_LLM_FALLBACK"] = "false"
 os.environ["DIARIZATION"] = "none"
+# Blank Google creds so auth runs in dev mode (auto-login as dev@localhost)
+os.environ["GOOGLE_CLIENT_ID"] = ""
+os.environ["GOOGLE_CLIENT_SECRET"] = ""
+os.environ["SECRET_KEY"] = "test-secret"
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

@@ -4,9 +4,11 @@ import type { MeetingDetail } from "../types";
 export function SummaryPanel({
   meeting,
   onResummarize,
+  canEdit = true,
 }: {
   meeting: MeetingDetail;
   onResummarize: () => void;
+  canEdit?: boolean;
 }) {
   const [overviewLang, setOverviewLang] = useState<"en" | "ta">("en");
   const s = meeting.summary;
@@ -99,7 +101,7 @@ export function SummaryPanel({
       )}
 
       <div className="summary-footer">
-        {meeting.status === "completed" && (
+        {canEdit && meeting.status === "completed" && (
           <button
             className="btn"
             title="Regenerate the summary from the current (edited) transcript"

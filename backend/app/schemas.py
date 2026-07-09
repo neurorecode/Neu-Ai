@@ -63,6 +63,66 @@ class SegmentUpdate(BaseModel):
     text: str
 
 
+class UserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    email: str
+    name: str
+    picture: str | None
+
+
+class MemberOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    role: str
+    user: UserOut
+
+
+class WorkspaceOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    name: str
+    summary_language: str
+    custom_vocabulary: list | None
+    role: str | None = None  # the requesting user's role, filled by the router
+
+
+class WorkspaceCreate(BaseModel):
+    name: str
+
+
+class WorkspaceUpdate(BaseModel):
+    name: str | None = None
+    summary_language: str | None = None
+    custom_vocabulary: list[str] | None = None
+
+
+class InviteCreate(BaseModel):
+    email: str
+    role: str = "member"
+
+
+class InviteOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    email: str
+    role: str
+    token: str
+    accepted_at: datetime | None
+
+
+class MemberRoleUpdate(BaseModel):
+    role: str
+
+
+class ShareOut(BaseModel):
+    share_token: str | None
+
+
 class SpeakerRename(BaseModel):
     from_name: str
     to_name: str

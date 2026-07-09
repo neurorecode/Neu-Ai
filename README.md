@@ -16,6 +16,10 @@ Upload a recording or record live from the browser. Neu transcribes the audio, t
 | 🧵 Job queue | Persistent DB-backed queue — interrupted jobs resume after a crash/restart |
 | 👤 Speakers | Optional pyannote diarization; rename speakers across a meeting in the UI |
 | ✏️ Editing | Fix mis-transcribed segments inline (language re-detected), then re-summarize |
+| 🔐 Auth & teams | Google sign-in (JWT sessions), workspaces with owner/member/viewer roles, email invites |
+| 🔗 Sharing | Public view-only share links for any meeting (revocable) |
+| ▶️ Playback | Audio player synced to the transcript — click a timestamp to play, follow-along highlight |
+| 🚀 Deploy | One-command Docker Compose stack (Caddy auto-HTTPS + Postgres 16 + nightly backups) — see [DEPLOY.md](DEPLOY.md) |
 | 💬 Ask Neu | Chat with any meeting — ask in Tamil, English, or Tanglish and get an answer in the same language, grounded in the transcript with timestamps |
 | 🔍 Search | Full-text search across all meetings in any of the three languages/scripts |
 

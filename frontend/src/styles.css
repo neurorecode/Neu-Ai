@@ -636,6 +636,205 @@ input[type="text"]:focus {
   flex: 1;
 }
 
+/* ---------- Auth & login ---------- */
+.center-screen {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 40px 48px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  text-align: center;
+}
+
+.brand-logo.big {
+  width: 64px;
+  height: 64px;
+  font-size: 30px;
+  border-radius: 16px;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.google-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  font-size: 15px;
+  text-decoration: none;
+  background: #fff;
+  color: #1f1f1f;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* ---------- Workspace bar ---------- */
+.workspace-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.workspace-row,
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.workspace-bar select {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-fallback {
+  background: var(--accent);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.user-name {
+  flex: 1;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Settings ---------- */
+.settings {
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.settings h3 {
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+.settings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 480px;
+}
+
+.settings-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.settings-grid select,
+.settings-grid textarea {
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.invite-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.invite-row input {
+  flex: 1;
+}
+
+.invite-row select {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ---------- Audio player & transcript sync ---------- */
+.audio-player {
+  width: 100%;
+  height: 40px;
+}
+
+.segment.active {
+  background: var(--accent-soft);
+  border-radius: 10px;
+  padding: 6px 10px;
+  margin: -6px -10px;
+}
+
+.timestamp-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.timestamp-btn:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+/* ---------- Shared page ---------- */
+.shared-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.shared-header {
+  padding: 14px 36px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
+}
+
+.shared-main {
+  flex: 1;
+}
+
 /* ---------- Utility ---------- */
 .muted {
   color: var(--text-muted);

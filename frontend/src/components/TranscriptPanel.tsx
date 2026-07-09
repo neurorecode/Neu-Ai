@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../api";
 import type { Segment } from "../types";
 import { LanguageBadge } from "./badges";
@@ -12,18 +12,28 @@ function formatTime(seconds: number): string {
 export function TranscriptPanel({
   meetingId,
   segments: initialSegments,
+  readOnly = false,
+  activeTime,
+  onSeek,
 }: {
-  meetingId: string;
+  meetingId?: string;
   segments: Segment[];
+  readOnly?: boolean;
+  activeTime?: number; // current playback position, for follow-along highlight
+  onSeek?: (seconds: number) => void;
 }) {
   const [segments, setSegments] = useState(initialSegments);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => setSegments(initialSegments), [initialSegments]);
+
+  const canEdit = !readOnly && !!meetingId;
+
   async function saveEdit(segmentId: string) {
     const text = draft.trim();
-    if (!text) return;
+    if (!text || !meetingId) return;
     try {
       const updated = await api.editSegment(meetingId, segmentId, text);
       setSegments((prev) => prev.map((s) => (s.id === segmentId ? updated : s)));
@@ -35,6 +45,7 @@ export function TranscriptPanel({
   }
 
   async function renameSpeaker(fromName: string) {
+    if (!meetingId) return;
     const toName = prompt(`Rename speaker "${fromName}" to:`, fromName);
     if (!toName || toName.trim() === fromName) return;
     try {
@@ -49,28 +60,45 @@ export function TranscriptPanel({
   if (segments.length === 0) {
     return <p className="muted">Transcript will appear here once transcription completes.</p>;
   }
+
+  const activeId =
+    activeTime != null
+      ? segments.find((s) => activeTime >= s.start && activeTime < Math.max(s.end, s.start + 1))?.id
+      : undefined;
+
   return (
     <div className="transcript">
-      <p className="muted small">
-        Tip: click a speaker name to rename them everywhere; use ✎ to fix a
-        mis-transcribed line (language is re-detected automatically).
-      </p>
+      {canEdit && (
+        <p className="muted small">
+          Tip: click a timestamp to play from there; click a speaker name to
+          rename them everywhere; use ✎ to fix a mis-transcribed line.
+        </p>
+      )}
       {error && <p className="error small">{error}</p>}
       {segments.map((seg) => (
-        <div key={seg.id} className="segment">
+        <div key={seg.id} className={`segment ${seg.id === activeId ? "active" : ""}`}>
           <div className="segment-meta">
-            <span className="timestamp">{formatTime(seg.start)}</span>
-            {seg.speaker && (
-              <button
-                className="speaker speaker-btn"
-                title="Rename this speaker across the meeting"
-                onClick={() => renameSpeaker(seg.speaker!)}
-              >
-                {seg.speaker}
-              </button>
-            )}
+            <button
+              className="timestamp timestamp-btn"
+              title="Play from here"
+              onClick={() => onSeek?.(seg.start)}
+            >
+              {formatTime(seg.start)}
+            </button>
+            {seg.speaker &&
+              (canEdit ? (
+                <button
+                  className="speaker speaker-btn"
+                  title="Rename this speaker across the meeting"
+                  onClick={() => renameSpeaker(seg.speaker!)}
+                >
+                  {seg.speaker}
+                </button>
+              ) : (
+                <span className="speaker">{seg.speaker}</span>
+              ))}
             {seg.language && <LanguageBadge language={seg.language} />}
-            {editingId !== seg.id && (
+            {canEdit && editingId !== seg.id && (
               <button
                 className="icon-btn"
                 title="Edit this segment"

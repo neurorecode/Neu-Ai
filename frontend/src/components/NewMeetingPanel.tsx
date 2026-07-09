@@ -1,7 +1,13 @@
 import { useRef, useState } from "react";
 import { api } from "../api";
 
-export function NewMeetingPanel({ onCreated }: { onCreated: () => void }) {
+export function NewMeetingPanel({
+  onCreated,
+  workspaceId,
+}: {
+  onCreated: () => void;
+  workspaceId?: string;
+}) {
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -14,7 +20,7 @@ export function NewMeetingPanel({ onCreated }: { onCreated: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      await api.uploadMeeting(title || "Untitled meeting", file, filename);
+      await api.uploadMeeting(title || "Untitled meeting", file, filename, workspaceId);
       setTitle("");
       if (fileInput.current) fileInput.current.value = "";
       onCreated();

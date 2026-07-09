@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -15,10 +15,83 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_id)
+    email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(255), default="")
+    picture: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=_now)
+
+    memberships: Mapped[list["WorkspaceMember"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+
+
+class Workspace(Base):
+    __tablename__ = "workspaces"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_id)
+    name: Mapped[str] = mapped_column(String(255))
+    created_at: Mapped[datetime] = mapped_column(default=_now)
+    # Workspace preferences
+    summary_language: Mapped[str] = mapped_column(String(10), default="both")  # en | ta | both
+    custom_vocabulary: Mapped[list | None] = mapped_column(JSON, nullable=True)
+
+    members: Mapped[list["WorkspaceMember"]] = relationship(
+        back_populates="workspace", cascade="all, delete-orphan"
+    )
+    meetings: Mapped[list["Meeting"]] = relationship(
+        back_populates="workspace", cascade="all, delete-orphan"
+    )
+    invites: Mapped[list["Invite"]] = relationship(
+        back_populates="workspace", cascade="all, delete-orphan"
+    )
+
+
+ROLES = ("owner", "member", "viewer")
+
+
+class WorkspaceMember(Base):
+    __tablename__ = "workspace_members"
+    __table_args__ = (UniqueConstraint("workspace_id", "user_id"),)
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_id)
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    role: Mapped[str] = mapped_column(String(10), default="member")  # owner | member | viewer
+    created_at: Mapped[datetime] = mapped_column(default=_now)
+
+    workspace: Mapped[Workspace] = relationship(back_populates="members")
+    user: Mapped[User] = relationship(back_populates="memberships")
+
+
+class Invite(Base):
+    __tablename__ = "invites"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_id)
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"), index=True)
+    email: Mapped[str] = mapped_column(String(320))
+    role: Mapped[str] = mapped_column(String(10), default="member")
+    token: Mapped[str] = mapped_column(String(64), unique=True, index=True, default=_id)
+    created_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(default=_now)
+    accepted_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+    workspace: Mapped[Workspace] = relationship(back_populates="invites")
+
+
 class Meeting(Base):
     __tablename__ = "meetings"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_id)
+    workspace_id: Mapped[str | None] = mapped_column(
+        ForeignKey("workspaces.id"), index=True, nullable=True
+    )
+    created_by: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    # non-null enables the public view-only share link
+    share_token: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     title: Mapped[str] = mapped_column(String(255))
     # uploaded -> transcribing -> summarizing -> completed | failed
     status: Mapped[str] = mapped_column(String(20), default="uploaded")
@@ -32,6 +105,7 @@ class Meeting(Base):
     audio_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=_now)
 
+    workspace: Mapped[Workspace | None] = relationship(back_populates="meetings")
     segments: Mapped[list["TranscriptSegment"]] = relationship(
         back_populates="meeting", cascade="all, delete-orphan", order_by="TranscriptSegment.start"
     )

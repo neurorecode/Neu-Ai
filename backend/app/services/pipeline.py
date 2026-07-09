@@ -102,9 +102,14 @@ async def process_meeting_job(meeting_id: str) -> None:
         meeting.stage = "Writing summary"
         db.commit()
 
-        # 5. Summarize with Claude
+        # 5. Summarize with Claude (respecting workspace preferences)
         db.refresh(meeting)
-        summary_data = await summarize_meeting(meeting.segments)
+        workspace = meeting.workspace
+        summary_data = await summarize_meeting(
+            meeting.segments,
+            summary_language=workspace.summary_language if workspace else "both",
+            vocabulary=workspace.custom_vocabulary if workspace else None,
+        )
         db.add(
             Summary(
                 meeting_id=meeting.id,
@@ -140,7 +145,12 @@ async def summarize_meeting_job(meeting_id: str) -> None:
         db.commit()
         db.refresh(meeting)
 
-        summary_data = await summarize_meeting(meeting.segments)
+        workspace = meeting.workspace
+        summary_data = await summarize_meeting(
+            meeting.segments,
+            summary_language=workspace.summary_language if workspace else "both",
+            vocabulary=workspace.custom_vocabulary if workspace else None,
+        )
         languages = [s.language for s in meeting.segments if s.language]
         from .language import language_breakdown as breakdown_fn
 

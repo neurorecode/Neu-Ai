@@ -1,4 +1,14 @@
-import type { ChatMessage, Meeting, MeetingDetail, SearchHit, Segment } from "./types";
+import type {
+  ChatMessage,
+  Invite,
+  Meeting,
+  MeetingDetail,
+  Member,
+  SearchHit,
+  Segment,
+  User,
+  Workspace,
+} from "./types";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
@@ -17,19 +27,77 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  listMeetings: () => request<Meeting[]>("/api/meetings"),
+  // --- auth ---
+  authConfig: () => request<{ auth_enabled: boolean }>("/api/auth/config"),
+  me: () => request<User>("/api/auth/me"),
+  logout: () => request<void>("/api/auth/logout", { method: "POST" }),
+
+  // --- workspaces ---
+  listWorkspaces: () => request<Workspace[]>("/api/workspaces"),
+  createWorkspace: (name: string) =>
+    request<Workspace>("/api/workspaces", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    }),
+  updateWorkspace: (id: string, patch: Partial<Workspace>) =>
+    request<Workspace>(`/api/workspaces/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }),
+  listMembers: (workspaceId: string) =>
+    request<Member[]>(`/api/workspaces/${workspaceId}/members`),
+  removeMember: (workspaceId: string, memberId: string) =>
+    request<void>(`/api/workspaces/${workspaceId}/members/${memberId}`, { method: "DELETE" }),
+  listInvites: (workspaceId: string) =>
+    request<Invite[]>(`/api/workspaces/${workspaceId}/invites`),
+  createInvite: (workspaceId: string, email: string, role: string) =>
+    request<Invite>(`/api/workspaces/${workspaceId}/invites`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, role }),
+    }),
+  revokeInvite: (workspaceId: string, inviteId: string) =>
+    request<void>(`/api/workspaces/${workspaceId}/invites/${inviteId}`, { method: "DELETE" }),
+  acceptInvite: (token: string) =>
+    request<Workspace>(`/api/invites/${token}/accept`, { method: "POST" }),
+
+  // --- meetings ---
+  listMeetings: (workspaceId?: string) =>
+    request<Meeting[]>(
+      workspaceId ? `/api/meetings?workspace_id=${workspaceId}` : "/api/meetings",
+    ),
 
   getMeeting: (id: string) => request<MeetingDetail>(`/api/meetings/${id}`),
 
   deleteMeeting: (id: string) =>
     request<void>(`/api/meetings/${id}`, { method: "DELETE" }),
 
-  uploadMeeting: (title: string, file: File | Blob, filename: string) => {
+  uploadMeeting: (
+    title: string,
+    file: File | Blob,
+    filename: string,
+    workspaceId?: string,
+  ) => {
     const form = new FormData();
     form.append("title", title);
     form.append("file", file, filename);
+    if (workspaceId) form.append("workspace_id", workspaceId);
     return request<Meeting>("/api/meetings", { method: "POST", body: form });
   },
+
+  enableShare: (meetingId: string) =>
+    request<{ share_token: string | null }>(`/api/meetings/${meetingId}/share`, {
+      method: "POST",
+    }),
+  disableShare: (meetingId: string) =>
+    request<{ share_token: string | null }>(`/api/meetings/${meetingId}/share`, {
+      method: "DELETE",
+    }),
+  getShared: (token: string) => request<MeetingDetail>(`/api/shared/${token}`),
+  audioUrl: (meetingId: string) => `/api/meetings/${meetingId}/audio`,
+  sharedAudioUrl: (token: string) => `/api/shared/${token}/audio`,
 
   editSegment: (meetingId: string, segmentId: string, text: string) =>
     request<Segment>(`/api/meetings/${meetingId}/segments/${segmentId}`, {

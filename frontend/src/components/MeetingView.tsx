@@ -1,17 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
 import type { MeetingDetail } from "../types";
 import { LanguageBadge, StatusBadge } from "./badges";
+import { AudioPlayer } from "./AudioPlayer";
 import { SummaryPanel } from "./SummaryPanel";
 import { TranscriptPanel } from "./TranscriptPanel";
 import { ChatPanel } from "./ChatPanel";
 
 type Tab = "summary" | "transcript" | "chat";
 
-export function MeetingView({ meetingId }: { meetingId: string }) {
+export function MeetingView({
+  meetingId,
+  canEdit = true,
+}: {
+  meetingId: string;
+  canEdit?: boolean;
+}) {
   const [meeting, setMeeting] = useState<MeetingDetail | null>(null);
   const [tab, setTab] = useState<Tab>("summary");
   const [error, setError] = useState<string | null>(null);
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [shareMsg, setShareMsg] = useState<string | null>(null);
+  const [playTime, setPlayTime] = useState(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,6 +53,34 @@ export function MeetingView({ meetingId }: { meetingId: string }) {
 
   const processing = meeting.status !== "completed" && meeting.status !== "failed";
 
+  function seek(seconds: number) {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.currentTime = seconds;
+    audio.play().catch(() => {});
+  }
+
+  async function toggleShare() {
+    try {
+      if (shareToken) {
+        await api.disableShare(meeting!.id);
+        setShareToken(null);
+        setShareMsg("Share link revoked");
+      } else {
+        const { share_token } = await api.enableShare(meeting!.id);
+        setShareToken(share_token);
+        if (share_token) {
+          const url = `${window.location.origin}/share/${share_token}`;
+          await navigator.clipboard.writeText(url).catch(() => {});
+          setShareMsg("Share link copied to clipboard");
+        }
+      }
+      setTimeout(() => setShareMsg(null), 3000);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
   return (
     <div className="meeting-view">
       <header className="meeting-header">
@@ -55,7 +94,13 @@ export function MeetingView({ meetingId }: { meetingId: string }) {
               {Math.round(meeting.duration_seconds % 60)} s
             </span>
           )}
+          {canEdit && meeting.status === "completed" && (
+            <button className="btn" onClick={toggleShare}>
+              {shareToken ? "Revoke share link" : "🔗 Share"}
+            </button>
+          )}
         </div>
+        {shareMsg && <p className="muted small">{shareMsg}</p>}
       </header>
 
       {meeting.status === "failed" && (
@@ -78,6 +123,10 @@ export function MeetingView({ meetingId }: { meetingId: string }) {
         </div>
       )}
 
+      {meeting.status === "completed" && (
+        <AudioPlayer ref={audioRef} src={api.audioUrl(meeting.id)} onTimeUpdate={setPlayTime} />
+      )}
+
       <nav className="tabs">
         {(["summary", "transcript", "chat"] as Tab[]).map((t) => (
           <button
@@ -93,6 +142,7 @@ export function MeetingView({ meetingId }: { meetingId: string }) {
       {tab === "summary" && (
         <SummaryPanel
           meeting={meeting}
+          canEdit={canEdit}
           onResummarize={async () => {
             await api.resummarize(meeting.id);
             setMeeting({ ...meeting, status: "summarizing", progress: 85, stage: "Queued for summary" });
@@ -100,7 +150,14 @@ export function MeetingView({ meetingId }: { meetingId: string }) {
         />
       )}
       {tab === "transcript" && (
-        <TranscriptPanel key={meeting.segments.length} meetingId={meeting.id} segments={meeting.segments} />
+        <TranscriptPanel
+          key={meeting.segments.length}
+          meetingId={meeting.id}
+          segments={meeting.segments}
+          readOnly={!canEdit}
+          activeTime={playTime}
+          onSeek={seek}
+        />
       )}
       {tab === "chat" && (
         <ChatPanel meetingId={meeting.id} ready={meeting.status === "completed"} />
