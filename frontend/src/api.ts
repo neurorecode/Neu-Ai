@@ -1,4 +1,6 @@
 import type {
+  CalendarEvent,
+  CalendarStatus,
   ChatMessage,
   Invite,
   Meeting,
@@ -62,6 +64,22 @@ export const api = {
     request<void>(`/api/workspaces/${workspaceId}/invites/${inviteId}`, { method: "DELETE" }),
   acceptInvite: (token: string) =>
     request<Workspace>(`/api/invites/${token}/accept`, { method: "POST" }),
+
+  // --- meeting bot & calendar ---
+  inviteBot: (meetingUrl: string, title: string, workspaceId?: string) =>
+    request<Meeting>("/api/meetings/invite-bot", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ meeting_url: meetingUrl, title, workspace_id: workspaceId }),
+    }),
+  calendarStatus: () => request<CalendarStatus>("/api/calendar/status"),
+  calendarEvents: () => request<CalendarEvent[]>("/api/calendar/events"),
+  setAutoJoin: (autoJoin: "none" | "video") =>
+    request<CalendarStatus>("/api/calendar/auto-join", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ auto_join: autoJoin }),
+    }),
 
   // --- meetings ---
   listMeetings: (workspaceId?: string) =>

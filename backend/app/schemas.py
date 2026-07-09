@@ -38,6 +38,7 @@ class MeetingOut(BaseModel):
     duration_seconds: float | None
     progress: int
     stage: str | None
+    source: str
     created_at: datetime
 
 
@@ -121,6 +122,21 @@ class MemberRoleUpdate(BaseModel):
 
 class ShareOut(BaseModel):
     share_token: str | None
+
+
+class InviteBotRequest(BaseModel):
+    meeting_url: str
+    title: str | None = None
+    workspace_id: str | None = None
+
+
+class BotStatusOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    status: str
+    provider: str
+    meeting_url: str
+    error: str | None
 
 
 class SpeakerRename(BaseModel):

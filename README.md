@@ -19,6 +19,9 @@ Upload a recording or record live from the browser. Neu transcribes the audio, t
 | 🔐 Auth & teams | Google sign-in (JWT sessions), workspaces with owner/member/viewer roles, email invites |
 | 🔗 Sharing | Public view-only share links for any meeting (revocable) |
 | ▶️ Playback | Audio player synced to the transcript — click a timestamp to play, follow-along highlight |
+| 🤖 Meeting bot | Neu auto-joins Google Meet / Zoom / Teams (via Recall.ai), records, and runs the same Tamil/Tanglish pipeline — with real participant names as speaker labels |
+| 📅 Calendar | Connect Google Calendar; see upcoming meetings and auto-join every call with a video link |
+| 📧 Recaps | Bilingual summary + action items emailed to the organizer when a meeting finishes |
 | 🚀 Deploy | One-command Docker Compose stack (Caddy auto-HTTPS + Postgres 16 + nightly backups) — see [DEPLOY.md](DEPLOY.md) |
 | 💬 Ask Neu | Chat with any meeting — ask in Tamil, English, or Tanglish and get an answer in the same language, grounded in the transcript with timestamps |
 | 🔍 Search | Full-text search across all meetings in any of the three languages/scripts |

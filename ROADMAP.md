@@ -84,7 +84,7 @@ Tamil/Tanglish recordings for testing.
 
 ---
 
-## Phase 3 — Meeting bot & calendar (the "Fireflies moment")
+## Phase 3 — Meeting bot & calendar (the "Fireflies moment") ✅ (built — pending live Recall.ai key + real-call verification)
 
 *Neu joins your meetings automatically.*
 

@@ -50,13 +50,14 @@ async def google_callback(
     if not state or state != neu_oauth_state:
         raise HTTPException(400, "Invalid OAuth state — try signing in again")
 
-    info = await auth_svc.exchange_code(code)
+    info, tokens = await auth_svc.exchange_code(code)
     email = info.get("email")
     if not email or not info.get("email_verified", True):
         raise HTTPException(401, "Google account has no verified email")
     auth_svc.check_email_allowed(email)
 
     user = auth_svc.upsert_user(db, email, info.get("name", ""), info.get("picture"))
+    auth_svc.store_google_tokens(db, user, tokens)
     token = auth_svc.issue_session_token(user)
 
     response = RedirectResponse(settings.frontend_url, status_code=302)

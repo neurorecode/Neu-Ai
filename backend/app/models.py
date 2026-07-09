@@ -26,6 +26,15 @@ class User(Base):
     picture: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=_now)
 
+    # Google OAuth tokens for Calendar access (offline refresh token stored so
+    # the background auto-join poller can read the user's calendar).
+    google_refresh_token: Mapped[str | None] = mapped_column(Text, nullable=True)
+    google_access_token: Mapped[str | None] = mapped_column(Text, nullable=True)
+    google_token_expiry: Mapped[datetime | None] = mapped_column(nullable=True)
+    google_scopes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Auto-join preference: none | video (join all calls with a video link)
+    auto_join: Mapped[str] = mapped_column(String(10), default="none")
+
     memberships: Mapped[list["WorkspaceMember"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
@@ -94,6 +103,10 @@ class Meeting(Base):
     created_by: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     # non-null enables the public view-only share link
     share_token: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
+    # how the meeting entered the system: upload | bot (auto-joined a call)
+    source: Mapped[str] = mapped_column(String(20), default="upload")
+    # calendar event this meeting was auto-joined from (dedup for the poller)
+    calendar_event_id: Mapped[str | None] = mapped_column(String(256), index=True, nullable=True)
     title: Mapped[str] = mapped_column(String(255))
     # uploaded -> transcribing -> summarizing -> completed | failed
     status: Mapped[str] = mapped_column(String(20), default="uploaded")
@@ -108,6 +121,9 @@ class Meeting(Base):
     created_at: Mapped[datetime] = mapped_column(default=_now)
 
     workspace: Mapped[Workspace | None] = relationship(back_populates="meetings")
+    bot: Mapped["MeetingBot | None"] = relationship(
+        back_populates="meeting", cascade="all, delete-orphan", uselist=False
+    )
     segments: Mapped[list["TranscriptSegment"]] = relationship(
         back_populates="meeting", cascade="all, delete-orphan", order_by="TranscriptSegment.start"
     )
@@ -149,6 +165,31 @@ class Summary(Base):
     language_breakdown: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     meeting: Mapped[Meeting] = relationship(back_populates="summary")
+
+
+class MeetingBot(Base):
+    """A dispatched meeting bot (Recall.ai) tied to a Meeting.
+
+    Tracks the bot lifecycle and stores the speaker timeline the provider
+    returns, so transcript segments can be labelled with real participant names.
+    """
+
+    __tablename__ = "meeting_bots"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_id)
+    meeting_id: Mapped[str] = mapped_column(ForeignKey("meetings.id"), unique=True)
+    provider: Mapped[str] = mapped_column(String(20), default="recall")
+    provider_bot_id: Mapped[str | None] = mapped_column(String(128), index=True, nullable=True)
+    meeting_url: Mapped[str] = mapped_column(Text)
+    # joining | recording | done | failed | left
+    status: Mapped[str] = mapped_column(String(20), default="joining")
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # [{start, end, speaker}, ...] captured from the provider once available
+    speaker_timeline: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=_now)
+    updated_at: Mapped[datetime] = mapped_column(default=_now, onupdate=_now)
+
+    meeting: Mapped[Meeting] = relationship(back_populates="bot")
 
 
 class Job(Base):

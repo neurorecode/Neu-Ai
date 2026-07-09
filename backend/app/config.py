@@ -21,6 +21,24 @@ class Settings(BaseSettings):
     # Use Claude to re-classify segments the heuristic finds ambiguous
     language_llm_fallback: bool = True
 
+    # ---- Meeting bot (auto-join Meet/Zoom/Teams) ----
+    # none | recall (Recall.ai — one API for all three platforms)
+    bot_provider: str = "none"
+    recall_api_key: str = ""
+    recall_region: str = "us-west-2"
+    bot_name: str = "Neu AI Notetaker"
+    # Shared secret in the webhook path so only Recall can post to it
+    webhook_secret: str = "changeme-webhook-secret"
+
+    # ---- Email recap (SMTP) ----
+    # When smtp_host is empty, recaps are logged to the console instead of sent.
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = "Neu AI <noreply@localhost>"
+    smtp_starttls: bool = True
+
     # STT chunking (seconds). Sarvam's sync endpoint caps around 30s of audio;
     # Whisper API caps at 25 MB (~13 min of 16kHz mono WAV).
     sarvam_chunk_seconds: float = 29.0

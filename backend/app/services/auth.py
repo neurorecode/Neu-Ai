@@ -44,6 +44,11 @@ def redirect_uri() -> str:
     return f"{settings.backend_url.rstrip('/')}/api/auth/google/callback"
 
 
+# Calendar read scope is requested so Neu can list upcoming meetings and
+# auto-join. offline access + consent prompt yields a refresh token.
+LOGIN_SCOPES = "openid email profile https://www.googleapis.com/auth/calendar.readonly"
+
+
 def build_login_url(state: str) -> str:
     from urllib.parse import urlencode
 
@@ -51,9 +56,11 @@ def build_login_url(state: str) -> str:
         "client_id": settings.google_client_id,
         "redirect_uri": redirect_uri(),
         "response_type": "code",
-        "scope": "openid email profile",
+        "scope": LOGIN_SCOPES,
         "state": state,
-        "prompt": "select_account",
+        "access_type": "offline",
+        "prompt": "consent select_account",
+        "include_granted_scopes": "true",
     }
     return f"{GOOGLE_AUTH_URL}?{urlencode(params)}"
 
@@ -62,8 +69,12 @@ def new_state() -> str:
     return secrets.token_urlsafe(24)
 
 
-async def exchange_code(code: str) -> dict:
-    """Exchange the auth code for tokens, then fetch the user's profile."""
+async def exchange_code(code: str) -> tuple[dict, dict]:
+    """Exchange the auth code for tokens, then fetch the user's profile.
+
+    Returns (userinfo, tokens) where tokens carries access_token /
+    refresh_token / expires_in / scope for Calendar access.
+    """
     async with httpx.AsyncClient(timeout=30) as client:
         token_resp = await client.post(
             GOOGLE_TOKEN_URL,
@@ -78,14 +89,32 @@ async def exchange_code(code: str) -> dict:
         if token_resp.status_code != 200:
             logger.warning("Google token exchange failed: %s", token_resp.text[:300])
             raise HTTPException(401, "Google sign-in failed (code exchange)")
-        access_token = token_resp.json().get("access_token")
+        tokens = token_resp.json()
 
         info_resp = await client.get(
-            GOOGLE_USERINFO_URL, headers={"Authorization": f"Bearer {access_token}"}
+            GOOGLE_USERINFO_URL, headers={"Authorization": f"Bearer {tokens.get('access_token')}"}
         )
         if info_resp.status_code != 200:
             raise HTTPException(401, "Google sign-in failed (userinfo)")
-        return info_resp.json()
+        return info_resp.json(), tokens
+
+
+def store_google_tokens(db: Session, user: User, tokens: dict) -> None:
+    """Persist Calendar tokens on the user. Google only returns a refresh_token
+    on first consent, so keep the existing one if this response omits it."""
+    from datetime import datetime, timedelta, timezone
+
+    if tokens.get("access_token"):
+        user.google_access_token = tokens["access_token"]
+    if tokens.get("refresh_token"):
+        user.google_refresh_token = tokens["refresh_token"]
+    if tokens.get("scope"):
+        user.google_scopes = tokens["scope"]
+    if tokens.get("expires_in"):
+        user.google_token_expiry = datetime.now(timezone.utc) + timedelta(
+            seconds=int(tokens["expires_in"]) - 60
+        )
+    db.commit()
 
 
 def check_email_allowed(email: str) -> None:

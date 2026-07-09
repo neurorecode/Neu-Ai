@@ -16,7 +16,22 @@ export interface Meeting {
   duration_seconds: number | null;
   progress: number;
   stage: string | null;
+  source: "upload" | "bot";
   created_at: string;
+}
+
+export interface CalendarEvent {
+  id: string | null;
+  title: string;
+  start: string | null;
+  meeting_url: string | null;
+  attendees: number;
+}
+
+export interface CalendarStatus {
+  connected: boolean;
+  auto_join: "none" | "video";
+  bots_enabled: boolean;
 }
 
 export interface Segment {

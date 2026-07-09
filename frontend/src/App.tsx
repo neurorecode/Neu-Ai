@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "./api";
 import type { Meeting, User, Workspace } from "./types";
+import { CalendarPanel } from "./components/CalendarPanel";
+import { InviteBotBar } from "./components/InviteBotBar";
 import { LoginScreen } from "./components/LoginScreen";
 import { MeetingList } from "./components/MeetingList";
 import { MeetingView } from "./components/MeetingView";
@@ -10,7 +12,11 @@ import { SettingsPanel } from "./components/SettingsPanel";
 import { SharedMeetingView } from "./components/SharedMeetingView";
 import { WorkspaceBar } from "./components/WorkspaceBar";
 
-type View = { kind: "meeting"; id: string } | { kind: "settings" } | { kind: "home" };
+type View =
+  | { kind: "meeting"; id: string }
+  | { kind: "settings" }
+  | { kind: "calendar" }
+  | { kind: "home" };
 
 export default function App() {
   // Public share links render without any auth: /share/{token}
@@ -129,7 +135,14 @@ function AuthedApp() {
         />
 
         {workspace?.role !== "viewer" && (
-          <NewMeetingPanel workspaceId={workspaceId ?? undefined} onCreated={refreshMeetings} />
+          <>
+            <NewMeetingPanel workspaceId={workspaceId ?? undefined} onCreated={refreshMeetings} />
+            <InviteBotBar
+              workspaceId={workspaceId ?? undefined}
+              onInvited={refreshMeetings}
+              onOpenCalendar={() => setView({ kind: "calendar" })}
+            />
+          </>
         )}
         <SearchBar onSelect={(id) => setView({ kind: "meeting", id })} />
 
@@ -153,6 +166,13 @@ function AuthedApp() {
             meetingId={view.id}
             key={view.id}
             canEdit={workspace?.role !== "viewer"}
+          />
+        )}
+        {view.kind === "calendar" && (
+          <CalendarPanel
+            workspaceId={workspaceId ?? undefined}
+            onJoined={refreshMeetings}
+            onClose={() => setView({ kind: "home" })}
           />
         )}
         {view.kind === "settings" && workspace && (

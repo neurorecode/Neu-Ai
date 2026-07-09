@@ -36,6 +36,17 @@ services:
       SARVAM_API_KEY: ${SARVAM_API_KEY}
       LANGUAGE_LLM_FALLBACK: ${LANGUAGE_LLM_FALLBACK:-true}
       AUTH_ALLOWED_EMAIL_DOMAINS: ${AUTH_ALLOWED_EMAIL_DOMAINS:-}
+      BOT_PROVIDER: ${BOT_PROVIDER:-none}
+      RECALL_API_KEY: ${RECALL_API_KEY:-}
+      RECALL_REGION: ${RECALL_REGION:-us-west-2}
+      BOT_NAME: ${BOT_NAME:-Neu AI Notetaker}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-changeme-webhook-secret}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-Neu AI <noreply@localhost>}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
     volumes:
       - uploads:/data/uploads
 

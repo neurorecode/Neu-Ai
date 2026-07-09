@@ -835,6 +835,80 @@ input[type="text"]:focus {
   flex: 1;
 }
 
+/* ---------- Meeting bot & calendar ---------- */
+.invite-bot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+}
+
+.invite-bot-row {
+  display: flex;
+  gap: 8px;
+}
+
+.invite-bot-row input {
+  flex: 1;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+  padding: 2px 0;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+.source-bot {
+  background: rgba(28, 126, 214, 0.2);
+  color: #90c2f0;
+}
+
+.autojoin-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.cal-events {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cal-event {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.cal-title {
+  font-weight: 600;
+}
+
+code {
+  background: var(--bg);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
 /* ---------- Utility ---------- */
 .muted {
   color: var(--text-muted);

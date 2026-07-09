@@ -13,12 +13,28 @@ import logging
 from ..database import SessionLocal
 from ..models import Meeting, Summary, TranscriptSegment
 from .audio import normalize_audio
-from .diarization import apply_diarization, diarization_enabled
+from .diarization import apply_diarization, assign_speakers_from_turns, diarization_enabled
 from .language import classify_segments
 from .stt import get_stt_provider
 from .summarizer import summarize_meeting
 
 logger = logging.getLogger("neu.pipeline")
+
+
+def _load_bot_speaker_turns(meeting_id: str):
+    """Return (start, end, speaker) tuples from the meeting's bot timeline, if any."""
+    from ..models import Meeting
+
+    db = SessionLocal()
+    try:
+        meeting = db.get(Meeting, meeting_id)
+        if meeting and meeting.bot and meeting.bot.speaker_timeline:
+            return [
+                (t["start"], t["end"], t["speaker"]) for t in meeting.bot.speaker_timeline
+            ]
+        return []
+    finally:
+        db.close()
 
 
 def _set_progress(meeting_id: str, progress: int, stage: str | None, status: str | None = None):
@@ -67,13 +83,19 @@ async def process_meeting_job(meeting_id: str) -> None:
     if duration and not result.duration_seconds:
         result.duration_seconds = duration
 
-    # 3. Optional speaker diarization for providers that don't label speakers
-    if diarization_enabled() and not any(s.speaker for s in result.segments):
-        _set_progress(meeting_id, 72, "Identifying speakers")
-        try:
-            await apply_diarization(wav_path, result.segments)
-        except Exception:
-            logger.exception("Diarization failed for %s — continuing without speakers", meeting_id)
+    # 3. Speaker labels. Prefer the meeting-bot's participant timeline (real
+    #    names); otherwise fall back to optional pyannote diarization.
+    if not any(s.speaker for s in result.segments):
+        bot_turns = _load_bot_speaker_turns(meeting_id)
+        if bot_turns:
+            _set_progress(meeting_id, 72, "Labelling speakers")
+            assign_speakers_from_turns(result.segments, bot_turns, relabel=False)
+        elif diarization_enabled():
+            _set_progress(meeting_id, 72, "Identifying speakers")
+            try:
+                await apply_diarization(wav_path, result.segments)
+            except Exception:
+                logger.exception("Diarization failed for %s — continuing without speakers", meeting_id)
 
     # 4. Language tagging (heuristic + optional LLM fallback for ambiguous spans)
     _set_progress(meeting_id, 78, "Tagging languages")
@@ -129,6 +151,11 @@ async def process_meeting_job(meeting_id: str) -> None:
         db.commit()
     finally:
         db.close()
+
+    # Email the recap to the meeting creator (no-op in dev / when SMTP unset).
+    from .email_recap import send_recap
+
+    send_recap(meeting_id)
 
 
 async def summarize_meeting_job(meeting_id: str) -> None:

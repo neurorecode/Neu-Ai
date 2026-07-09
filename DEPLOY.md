@@ -66,6 +66,35 @@ crontab -e
 Nightly `pg_dump` with 14-day rotation into `deploy/backups/`. For off-site
 copies, configure `rclone` and uncomment the last line of `backup.sh`.
 
+## Optional — enable the meeting bot & auto-join (Phase 3)
+
+Neu can auto-join Google Meet / Zoom / Teams calls, transcribe them, and email
+recaps. This uses [Recall.ai](https://recall.ai) (one API for all three
+platforms; bot time is paid, ~$0.5–1/hour).
+
+1. Create a Recall.ai account and copy your API key + region.
+2. In `deploy/.env` set:
+   ```
+   BOT_PROVIDER=recall
+   RECALL_API_KEY=your_key
+   RECALL_REGION=us-west-2
+   WEBHOOK_SECRET=<openssl rand -hex 16>
+   ```
+3. `docker compose up -d` to apply.
+4. Neu automatically registers this webhook when it sends a bot:
+   `https://YOUR-DOMAIN/api/bots/webhook/YOUR_WEBHOOK_SECRET` — no dashboard
+   config needed, but ensure the domain is publicly reachable over HTTPS.
+
+**Calendar auto-join** works out of the box once the bot is enabled — users
+grant calendar access at sign-in (the Google consent screen now lists the
+read-only Calendar scope), then toggle "auto-join" under *Upcoming meetings*.
+If you already signed in before enabling this, sign out and back in once to
+grant the new scope.
+
+**Email recaps:** set `SMTP_HOST`/`SMTP_USER`/`SMTP_PASSWORD` (e.g. Gmail
+Workspace SMTP or SendGrid). Left empty, recaps are written to the backend log
+instead of emailed — handy for testing.
+
 ## Day-2 operations
 
 | Task | Command (from `Neu-Ai/deploy`) |

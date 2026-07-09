@@ -37,6 +37,7 @@ export function MeetingList({
             </button>
           </div>
           <div className="meeting-row-bottom">
+            {m.source === "bot" && <span className="badge source-bot" title="Auto-joined by Neu's bot">🤖 Bot</span>}
             <StatusBadge status={m.status} />
             {m.language && <LanguageBadge language={m.language} />}
             <span className="muted small">

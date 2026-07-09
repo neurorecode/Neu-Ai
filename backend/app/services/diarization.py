@@ -57,19 +57,22 @@ def _diarize_sync(wav_path: str) -> list[tuple[float, float, str]]:
     ]
 
 
-async def apply_diarization(wav_path: str, segments) -> None:
-    """Assign 'Speaker N' labels to transcript segments in place.
+def assign_speakers_from_turns(segments, turns, *, relabel: bool = True) -> None:
+    """Label transcript segments in place from (start, end, speaker) turns.
 
-    Each segment gets the speaker whose diarization turns overlap it most.
-    Speakers are numbered by order of first appearance in the meeting.
+    Each segment gets the speaker whose turns overlap it most. When relabel is
+    True, opaque diarization keys are mapped to 'Speaker 1/2/…' in order of
+    first appearance; when False (e.g. Recall gives real participant names),
+    the turn labels are used verbatim.
     """
-    turns = await asyncio.to_thread(_diarize_sync, wav_path)
     if not turns:
         return
 
     label_map: dict[str, str] = {}
 
     def display_name(key: str) -> str:
+        if not relabel:
+            return key
         if key not in label_map:
             label_map[key] = f"Speaker {len(label_map) + 1}"
         return label_map[key]
@@ -83,3 +86,9 @@ async def apply_diarization(wav_path: str, segments) -> None:
         if overlaps:
             best = max(overlaps, key=overlaps.get)
             seg.speaker = display_name(best)
+
+
+async def apply_diarization(wav_path: str, segments) -> None:
+    """Run pyannote diarization and label segments with 'Speaker N'."""
+    turns = await asyncio.to_thread(_diarize_sync, wav_path)
+    assign_speakers_from_turns(segments, turns, relabel=True)
