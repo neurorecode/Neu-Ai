@@ -3,11 +3,14 @@
   dispatch_bot()      -> create a Meeting + MeetingBot and send the bot to the call
   handle_bot_update() -> on status change; when 'done', download the recording,
                          store the speaker timeline, and enqueue the pipeline
+  bot_poll_loop()     -> safety net: polls in-flight bots so completion doesn't
+                         depend on the webhook being deliverable
 
-Both the webhook and the poll-fallback funnel through handle_bot_update, so the
+Both the webhook and the poller funnel through handle_bot_update, so the
 "recording ready -> transcribe" transition happens exactly once.
 """
 
+import asyncio
 import logging
 
 from ..config import settings
@@ -136,3 +139,56 @@ def _mark_failed(meeting_id: str, message: str) -> None:
             db.commit()
     finally:
         db.close()
+
+
+async def poll_active_bots() -> None:
+    """Check in-flight bots against the provider and advance any that finished.
+    Runs regardless of webhook delivery, so a broken/unreachable webhook never
+    leaves a bot stuck."""
+    from .bots import bots_enabled, get_bot_provider
+
+    if not bots_enabled():
+        return
+
+    db = SessionLocal()
+    try:
+        active_ids = [
+            b.provider_bot_id
+            for b in db.query(MeetingBot)
+            .filter(
+                MeetingBot.provider_bot_id.isnot(None),
+                MeetingBot.status.in_(("joining", "recording")),
+            )
+            .all()
+        ]
+    finally:
+        db.close()
+    if not active_ids:
+        return
+
+    provider = get_bot_provider()
+    for provider_bot_id in active_ids:
+        try:
+            st = await provider.get_status(provider_bot_id)
+            await handle_bot_update(provider_bot_id=provider_bot_id, status=st.status)
+        except Exception:
+            logger.exception("Bot poll failed for %s", provider_bot_id)
+
+
+async def bot_poll_loop(stop_event: asyncio.Event, interval: float = 30.0) -> None:
+    from .bots import bots_enabled
+
+    if not bots_enabled():
+        logger.info("Bot status poller inactive (no bot provider configured)")
+        return
+    logger.info("Bot status poller started")
+    while not stop_event.is_set():
+        try:
+            await poll_active_bots()
+        except Exception:
+            logger.exception("Bot poll loop error")
+        try:
+            await asyncio.wait_for(stop_event.wait(), timeout=interval)
+        except asyncio.TimeoutError:
+            pass
+    logger.info("Bot status poller stopped")
