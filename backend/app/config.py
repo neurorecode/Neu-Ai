@@ -14,6 +14,18 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     local_whisper_model: str = "small"
 
+    # Speaker diarization: none | pyannote (needs pyannote.audio + HF_TOKEN)
+    diarization: str = "none"
+    hf_token: str = ""
+
+    # Use Claude to re-classify segments the heuristic finds ambiguous
+    language_llm_fallback: bool = True
+
+    # STT chunking (seconds). Sarvam's sync endpoint caps around 30s of audio;
+    # Whisper API caps at 25 MB (~13 min of 16kHz mono WAV).
+    sarvam_chunk_seconds: float = 29.0
+    openai_chunk_seconds: float = 600.0
+
     database_url: str = "sqlite:///./data/neu.db"
     upload_dir: str = "./data/uploads"
 

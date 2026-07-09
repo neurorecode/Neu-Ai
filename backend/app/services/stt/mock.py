@@ -4,7 +4,7 @@ any STT credentials."""
 
 import asyncio
 
-from .base import STTProvider, TranscriptResult, TranscriptSegmentData
+from .base import ProgressCallback, STTProvider, TranscriptResult, TranscriptSegmentData
 
 DEMO_SEGMENTS = [
     (0.0, 6.5, "Priya", "Vanakkam everyone, let's start the sprint stand-up. Ellarum ready ah?"),
@@ -25,8 +25,13 @@ DEMO_SEGMENTS = [
 
 
 class MockSTT(STTProvider):
-    async def transcribe(self, audio_path: str) -> TranscriptResult:
-        await asyncio.sleep(1.5)  # simulate processing latency
+    async def transcribe(
+        self, audio_path: str, on_progress: ProgressCallback | None = None
+    ) -> TranscriptResult:
+        for i in range(3):  # simulate processing latency with progress
+            await asyncio.sleep(0.5)
+            if on_progress:
+                on_progress((i + 1) / 3)
         segments = [
             TranscriptSegmentData(start=s, end=e, speaker=spk, text=txt)
             for s, e, spk, txt in DEMO_SEGMENTS

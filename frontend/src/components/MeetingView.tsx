@@ -66,8 +66,15 @@ export function MeetingView({ meetingId }: { meetingId: string }) {
 
       {processing && (
         <div className="processing-banner">
-          <div className="spinner" /> Neu is working on this meeting — transcribing
-          and summarizing. This page refreshes automatically.
+          <div className="processing-row">
+            <div className="spinner" />
+            <span>
+              {meeting.stage ?? "Processing"} — {meeting.progress}%
+            </span>
+          </div>
+          <div className="progress-track">
+            <div className="progress-fill" style={{ width: `${meeting.progress}%` }} />
+          </div>
         </div>
       )}
 
@@ -83,8 +90,18 @@ export function MeetingView({ meetingId }: { meetingId: string }) {
         ))}
       </nav>
 
-      {tab === "summary" && <SummaryPanel meeting={meeting} />}
-      {tab === "transcript" && <TranscriptPanel segments={meeting.segments} />}
+      {tab === "summary" && (
+        <SummaryPanel
+          meeting={meeting}
+          onResummarize={async () => {
+            await api.resummarize(meeting.id);
+            setMeeting({ ...meeting, status: "summarizing", progress: 85, stage: "Queued for summary" });
+          }}
+        />
+      )}
+      {tab === "transcript" && (
+        <TranscriptPanel key={meeting.segments.length} meetingId={meeting.id} segments={meeting.segments} />
+      )}
       {tab === "chat" && (
         <ChatPanel meetingId={meeting.id} ready={meeting.status === "completed"} />
       )}

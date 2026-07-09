@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, Float, ForeignKey, String, Text
+from sqlalchemy import JSON, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -25,6 +25,9 @@ class Meeting(Base):
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     # dominant language of the meeting: tamil | english | tanglish | mixed
     language: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # pipeline progress: 0-100 plus a human-readable stage description
+    progress: Mapped[int] = mapped_column(Integer, default=0)
+    stage: Mapped[str | None] = mapped_column(String(100), nullable=True)
     duration_seconds: Mapped[float | None] = mapped_column(Float, nullable=True)
     audio_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=_now)
@@ -70,6 +73,25 @@ class Summary(Base):
     language_breakdown: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     meeting: Mapped[Meeting] = relationship(back_populates="summary")
+
+
+class Job(Base):
+    """Persistent work queue entry. Jobs survive process restarts: on startup
+    any job left in 'running' (crashed mid-flight) is re-queued."""
+
+    __tablename__ = "jobs"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_id)
+    meeting_id: Mapped[str] = mapped_column(ForeignKey("meetings.id"))
+    # process (full pipeline) | summarize (summary only, keep transcript)
+    type: Mapped[str] = mapped_column(String(20), default="process")
+    # queued | running | done | failed
+    status: Mapped[str] = mapped_column(String(20), default="queued")
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    max_attempts: Mapped[int] = mapped_column(Integer, default=3)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=_now)
+    updated_at: Mapped[datetime] = mapped_column(default=_now, onupdate=_now)
 
 
 class ChatMessage(Base):

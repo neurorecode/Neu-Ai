@@ -1,15 +1,23 @@
 import shutil
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..database import get_db
 from ..models import Meeting, TranscriptSegment
-from ..schemas import MeetingDetail, MeetingOut, SearchHit
-from ..services.pipeline import process_meeting
+from ..schemas import (
+    MeetingDetail,
+    MeetingOut,
+    SearchHit,
+    SegmentOut,
+    SegmentUpdate,
+    SpeakerRename,
+)
+from ..services.jobs import enqueue
+from ..services.language import detect_language
 
 router = APIRouter(prefix="/api/meetings", tags=["meetings"])
 
@@ -23,7 +31,6 @@ def list_meetings(db: Session = Depends(get_db)):
 
 @router.post("", response_model=MeetingOut, status_code=201)
 async def create_meeting(
-    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     title: str = Form("Untitled meeting"),
     db: Session = Depends(get_db),
@@ -42,7 +49,7 @@ async def create_meeting(
     meeting.audio_path = str(dest)
     db.commit()
 
-    background_tasks.add_task(process_meeting, meeting.id)
+    enqueue(db, meeting.id, "process")
     return meeting
 
 
@@ -102,26 +109,86 @@ def delete_meeting(meeting_id: str, db: Session = Depends(get_db)):
     if meeting is None:
         raise HTTPException(404, "Meeting not found")
     if meeting.audio_path:
-        Path(meeting.audio_path).unlink(missing_ok=True)
+        base = Path(meeting.audio_path)
+        base.unlink(missing_ok=True)
+        base.with_suffix(".norm.wav").unlink(missing_ok=True)
     db.delete(meeting)
     db.commit()
 
 
 @router.post("/{meeting_id}/reprocess", response_model=MeetingOut)
-def reprocess(meeting_id: str, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def reprocess(meeting_id: str, db: Session = Depends(get_db)):
+    """Re-run the full pipeline (transcription + summary) from the original audio."""
     meeting = db.get(Meeting, meeting_id)
     if meeting is None:
         raise HTTPException(404, "Meeting not found")
     if not meeting.audio_path or not Path(meeting.audio_path).exists():
         raise HTTPException(400, "Original audio is no longer available")
 
-    for seg in list(meeting.segments):
-        db.delete(seg)
-    if meeting.summary:
-        db.delete(meeting.summary)
     meeting.status = "uploaded"
+    meeting.progress = 0
+    meeting.stage = "Queued"
     meeting.error = None
     db.commit()
 
-    background_tasks.add_task(process_meeting, meeting.id)
+    enqueue(db, meeting.id, "process")
     return meeting
+
+
+@router.post("/{meeting_id}/resummarize", response_model=MeetingOut)
+def resummarize(meeting_id: str, db: Session = Depends(get_db)):
+    """Regenerate only the summary from the current (possibly edited) transcript."""
+    meeting = db.get(Meeting, meeting_id)
+    if meeting is None:
+        raise HTTPException(404, "Meeting not found")
+    if not meeting.segments:
+        raise HTTPException(400, "No transcript to summarize yet")
+
+    meeting.status = "summarizing"
+    meeting.progress = 85
+    meeting.stage = "Queued for summary"
+    meeting.error = None
+    db.commit()
+
+    enqueue(db, meeting.id, "summarize")
+    return meeting
+
+
+@router.patch("/{meeting_id}/segments/{segment_id}", response_model=SegmentOut)
+def edit_segment(
+    meeting_id: str, segment_id: str, body: SegmentUpdate, db: Session = Depends(get_db)
+):
+    """Correct a mis-transcribed segment. Language is re-detected; search stays
+    consistent automatically (it queries the segments table)."""
+    segment = db.get(TranscriptSegment, segment_id)
+    if segment is None or segment.meeting_id != meeting_id:
+        raise HTTPException(404, "Segment not found")
+    text = body.text.strip()
+    if not text:
+        raise HTTPException(400, "Segment text cannot be empty")
+
+    segment.text = text
+    segment.language = detect_language(text)
+    db.commit()
+    return segment
+
+
+@router.post("/{meeting_id}/speakers/rename", response_model=list[SegmentOut])
+def rename_speaker(meeting_id: str, body: SpeakerRename, db: Session = Depends(get_db)):
+    """Rename a speaker across the whole meeting (e.g. 'Speaker 1' -> 'Priya')."""
+    meeting = db.get(Meeting, meeting_id)
+    if meeting is None:
+        raise HTTPException(404, "Meeting not found")
+    to_name = body.to_name.strip()
+    if not to_name:
+        raise HTTPException(400, "New speaker name cannot be empty")
+
+    updated = 0
+    for seg in meeting.segments:
+        if seg.speaker == body.from_name:
+            seg.speaker = to_name
+            updated += 1
+    if updated == 0:
+        raise HTTPException(404, f"No segments with speaker '{body.from_name}'")
+    db.commit()
+    return meeting.segments

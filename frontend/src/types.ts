@@ -14,6 +14,8 @@ export interface Meeting {
   error: string | null;
   language: Language | null;
   duration_seconds: number | null;
+  progress: number;
+  stage: string | null;
   created_at: string;
 }
 

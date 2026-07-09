@@ -36,6 +36,8 @@ class MeetingOut(BaseModel):
     error: str | None
     language: str | None
     duration_seconds: float | None
+    progress: int
+    stage: str | None
     created_at: datetime
 
 
@@ -55,6 +57,15 @@ class ChatMessageOut(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
+
+
+class SegmentUpdate(BaseModel):
+    text: str
+
+
+class SpeakerRename(BaseModel):
+    from_name: str
+    to_name: str
 
 
 class SearchHit(BaseModel):

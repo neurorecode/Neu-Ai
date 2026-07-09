@@ -12,6 +12,10 @@ Upload a recording or record live from the browser. Neu transcribes the audio, t
 | 📝 Transcription | Pluggable STT: **Sarvam AI** (best for Tamil & code-mixed speech), **OpenAI Whisper**, **local faster-whisper**, or a keyless **mock** demo provider |
 | 🌐 Language tagging | Every transcript segment is classified as Tamil (script-based), English, or Tanglish (romanized-Tamil / code-mixed detection) |
 | 🧠 AI summary | Claude generates a bilingual overview (English + தமிழ்), key points, action items (task / owner / due), decisions, topics, and tone |
+| 🎛️ Audio pipeline | ffmpeg normalization (16 kHz mono WAV), long recordings chunked & stitched, retries with backoff, live progress (% + stage) |
+| 🧵 Job queue | Persistent DB-backed queue — interrupted jobs resume after a crash/restart |
+| 👤 Speakers | Optional pyannote diarization; rename speakers across a meeting in the UI |
+| ✏️ Editing | Fix mis-transcribed segments inline (language re-detected), then re-summarize |
 | 💬 Ask Neu | Chat with any meeting — ask in Tamil, English, or Tanglish and get an answer in the same language, grounded in the transcript with timestamps |
 | 🔍 Search | Full-text search across all meetings in any of the three languages/scripts |
 
@@ -64,6 +68,21 @@ Open http://localhost:5173. The dev server proxies `/api` to the backend on port
 | `SARVAM_API_KEY` | For `sarvam` — [Sarvam AI](https://www.sarvam.ai) `saarika` model, the strongest choice for Tamil + Tanglish audio |
 | `OPENAI_API_KEY` | For `openai` — Whisper API |
 | `LOCAL_WHISPER_MODEL` | For `local` — faster-whisper model size (`pip install faster-whisper` required) |
+| `DIARIZATION` | `none` (default) or `pyannote` — speaker labels on real recordings (`pip install pyannote.audio` + `HF_TOKEN`) |
+| `LANGUAGE_LLM_FALLBACK` | Re-check ambiguous segments with Claude (default `true`, needs the Anthropic key) |
+
+`ffmpeg` must be installed for real audio processing (`apt install ffmpeg` / `brew install ffmpeg`).
+
+## Tests
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+pytest tests/
+```
+
+Includes a 100-utterance Tamil/English/Tanglish eval set gating classifier
+accuracy at ≥90%, plus audio, job-queue crash-recovery, and end-to-end API tests.
 
 ## How Tamil / English / Tanglish detection works
 

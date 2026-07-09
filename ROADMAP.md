@@ -19,7 +19,7 @@ criteria pass end-to-end.
 
 ---
 
-## Phase 1 — Real audio pipeline (production-grade transcription)
+## Phase 1 — Real audio pipeline (production-grade transcription) ✅ (done — pending live Sarvam key verification)
 
 *Make real recordings work as well as the demo does.*
 

@@ -1,4 +1,4 @@
-import type { ChatMessage, Meeting, MeetingDetail, SearchHit } from "./types";
+import type { ChatMessage, Meeting, MeetingDetail, SearchHit, Segment } from "./types";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
@@ -30,6 +30,23 @@ export const api = {
     form.append("file", file, filename);
     return request<Meeting>("/api/meetings", { method: "POST", body: form });
   },
+
+  editSegment: (meetingId: string, segmentId: string, text: string) =>
+    request<Segment>(`/api/meetings/${meetingId}/segments/${segmentId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    }),
+
+  renameSpeaker: (meetingId: string, fromName: string, toName: string) =>
+    request<Segment[]>(`/api/meetings/${meetingId}/speakers/rename`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ from_name: fromName, to_name: toName }),
+    }),
+
+  resummarize: (meetingId: string) =>
+    request<Meeting>(`/api/meetings/${meetingId}/resummarize`, { method: "POST" }),
 
   search: (q: string) =>
     request<SearchHit[]>(`/api/meetings/search?q=${encodeURIComponent(q)}`),

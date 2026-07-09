@@ -1,7 +1,13 @@
 import { useState } from "react";
 import type { MeetingDetail } from "../types";
 
-export function SummaryPanel({ meeting }: { meeting: MeetingDetail }) {
+export function SummaryPanel({
+  meeting,
+  onResummarize,
+}: {
+  meeting: MeetingDetail;
+  onResummarize: () => void;
+}) {
   const [overviewLang, setOverviewLang] = useState<"en" | "ta">("en");
   const s = meeting.summary;
 
@@ -93,6 +99,15 @@ export function SummaryPanel({ meeting }: { meeting: MeetingDetail }) {
       )}
 
       <div className="summary-footer">
+        {meeting.status === "completed" && (
+          <button
+            className="btn"
+            title="Regenerate the summary from the current (edited) transcript"
+            onClick={onResummarize}
+          >
+            ↻ Re-summarize
+          </button>
+        )}
         {s.language_breakdown && Object.keys(s.language_breakdown).length > 0 && (
           <span className="muted small">
             Language mix:{" "}

@@ -8,7 +8,7 @@ tanglish downstream.
 
 import asyncio
 
-from .base import STTProvider, TranscriptResult, TranscriptSegmentData
+from .base import ProgressCallback, STTProvider, TranscriptResult, TranscriptSegmentData
 
 
 class LocalWhisperSTT(STTProvider):
@@ -37,5 +37,7 @@ class LocalWhisperSTT(STTProvider):
         ]
         return TranscriptResult(segments=segments, duration_seconds=getattr(info, "duration", None))
 
-    async def transcribe(self, audio_path: str) -> TranscriptResult:
+    async def transcribe(
+        self, audio_path: str, on_progress: ProgressCallback | None = None
+    ) -> TranscriptResult:
         return await asyncio.to_thread(self._transcribe_sync, audio_path)

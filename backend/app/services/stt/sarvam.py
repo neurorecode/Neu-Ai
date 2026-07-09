@@ -2,11 +2,16 @@
 
 Best-in-class for Indian languages including Tamil and heavily code-mixed
 Tamil-English speech. https://docs.sarvam.ai
+
+The synchronous endpoint accepts short clips (~30s), so long recordings are
+split into chunks (services.audio) and transcribed concurrently with retries;
+timestamps are re-based onto the full recording.
 """
 
-import httpx
-
-from .base import STTProvider, TranscriptResult, TranscriptSegmentData
+from ...config import settings
+from ..audio import cleanup_chunks, split_audio
+from .base import ProgressCallback, STTProvider, TranscriptResult, TranscriptSegmentData
+from .util import post_with_retries, run_chunked
 
 API_URL = "https://api.sarvam.ai/speech-to-text"
 
@@ -18,22 +23,19 @@ class SarvamSTT(STTProvider):
         self.api_key = api_key
         self.model = model
 
-    async def transcribe(self, audio_path: str) -> TranscriptResult:
-        async with httpx.AsyncClient(timeout=300) as client:
-            with open(audio_path, "rb") as f:
-                resp = await client.post(
-                    API_URL,
-                    headers={"api-subscription-key": self.api_key},
-                    data={
-                        "model": self.model,
-                        # unknown lets saarika auto-detect and handle
-                        # Tamil / English / code-mixed speech
-                        "language_code": "unknown",
-                        "with_timestamps": "true",
-                    },
-                    files={"file": (audio_path.split("/")[-1], f, "audio/wav")},
-                )
-        resp.raise_for_status()
+    async def _transcribe_chunk(self, chunk) -> list[TranscriptSegmentData]:
+        resp = await post_with_retries(
+            API_URL,
+            headers={"api-subscription-key": self.api_key},
+            data={
+                "model": self.model,
+                # unknown lets saarika auto-detect and handle
+                # Tamil / English / code-mixed speech
+                "language_code": "unknown",
+                "with_timestamps": "true",
+            },
+            file_path=chunk.path,
+        )
         data = resp.json()
 
         segments: list[TranscriptSegmentData] = []
@@ -43,27 +45,39 @@ class SarvamSTT(STTProvider):
         ends = timestamps.get("end_time_seconds") or []
 
         if words and starts and ends:
-            # Group word-level timestamps into ~12s utterance chunks.
+            # Group word-level timestamps into utterance-sized spans.
             chunk_words: list[str] = []
-            chunk_start = starts[0]
+            span_start = starts[0]
             for word, w_start, w_end in zip(words, starts, ends):
                 chunk_words.append(word)
-                if w_end - chunk_start >= 12.0 or word.endswith((".", "?", "!", "।")):
+                if w_end - span_start >= 12.0 or word.endswith((".", "?", "!", "।")):
                     segments.append(
-                        TranscriptSegmentData(
-                            start=chunk_start, end=w_end, text=" ".join(chunk_words)
-                        )
+                        TranscriptSegmentData(start=span_start, end=w_end, text=" ".join(chunk_words))
                     )
                     chunk_words = []
-                    chunk_start = w_end
+                    span_start = w_end
             if chunk_words:
                 segments.append(
-                    TranscriptSegmentData(start=chunk_start, end=ends[-1], text=" ".join(chunk_words))
+                    TranscriptSegmentData(start=span_start, end=ends[-1], text=" ".join(chunk_words))
                 )
         else:
-            transcript = data.get("transcript", "")
+            transcript = (data.get("transcript") or "").strip()
             if transcript:
-                segments.append(TranscriptSegmentData(start=0.0, end=0.0, text=transcript))
+                segments.append(
+                    TranscriptSegmentData(start=0.0, end=chunk.duration, text=transcript)
+                )
+        return segments
+
+    async def transcribe(
+        self, audio_path: str, on_progress: ProgressCallback | None = None
+    ) -> TranscriptResult:
+        chunks = await split_audio(
+            audio_path, chunk_seconds=settings.sarvam_chunk_seconds, overlap=0.0
+        )
+        try:
+            segments = await run_chunked(chunks, self._transcribe_chunk, on_progress)
+        finally:
+            cleanup_chunks(chunks, keep=audio_path)
 
         duration = segments[-1].end if segments and segments[-1].end else None
         return TranscriptResult(segments=segments, duration_seconds=duration)
