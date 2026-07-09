@@ -51,16 +51,17 @@ class RecallBotProvider(BotProvider):
         return STATUS_MAP.get(code or "", "joining")
 
     async def create_bot(self, meeting_url: str, bot_name: str, webhook_url: str | None) -> BotHandle:
+        # Record mixed audio; we run our own (Sarvam) transcription downstream.
+        # We do NOT register a per-bot realtime webhook here — bot status
+        # changes aren't a valid realtime-endpoint event. Completion is driven
+        # by the status poller (bot_service.bot_poll_loop); for push instead of
+        # poll, configure an account-level webhook to /api/bots/webhook/<secret>
+        # in the Recall dashboard.
         body: dict = {
             "meeting_url": meeting_url,
             "bot_name": bot_name,
-            # Record mixed audio; we run our own (Sarvam) transcription downstream.
             "recording_config": {"audio_mixed": {}},
         }
-        if webhook_url:
-            body["recording_config"]["realtime_endpoints"] = [
-                {"type": "webhook", "url": webhook_url, "events": ["bot.status_change"]}
-            ]
         async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.post(f"{self.base}/bot", headers=self._headers(), json=body)
         if resp.status_code >= 400:
