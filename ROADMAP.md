@@ -55,6 +55,14 @@ Tamil/Tanglish recordings for testing.
 
 *From single-user demo to multi-user product.*
 
+**Decisions (locked 2026-07-09)**
+- Auth: **Google sign-in** (OAuth in FastAPI + JWT sessions; no third-party auth service)
+- Hosting: **self-hosted on Hostinger VPS (Ubuntu)** via Docker Compose —
+  Caddy (auto-HTTPS) + FastAPI + Postgres 16 + disk volume for audio behind an
+  S3-compatible storage abstraction (portable to R2/Backblaze later).
+  Nightly pg_dump backups included. Prereqs before deploy: a (sub)domain
+  pointed at the VPS, Google Cloud OAuth client credentials.
+
 **Requirements**
 1. **Authentication**: email + OTP or Google OAuth; JWT sessions.
 2. **Workspaces/teams**: meetings belong to a workspace; invite teammates;
