@@ -21,7 +21,9 @@ class User(Base):
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_id)
     email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(255), default="")
-    picture: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    # Google profile-picture URLs can exceed 1KB — use unbounded Text so
+    # Postgres (which enforces varchar limits, unlike SQLite) doesn't truncate.
+    picture: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=_now)
 
     memberships: Mapped[list["WorkspaceMember"]] = relationship(
@@ -143,7 +145,7 @@ class Summary(Base):
     action_items: Mapped[list | None] = mapped_column(JSON, nullable=True)
     decisions: Mapped[list | None] = mapped_column(JSON, nullable=True)
     topics: Mapped[list | None] = mapped_column(JSON, nullable=True)
-    sentiment: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    sentiment: Mapped[str | None] = mapped_column(Text, nullable=True)
     language_breakdown: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     meeting: Mapped[Meeting] = relationship(back_populates="summary")
