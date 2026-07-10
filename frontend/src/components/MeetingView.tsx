@@ -84,23 +84,25 @@ export function MeetingView({
   return (
     <div className="meeting-view">
       <header className="meeting-header">
-        <h2>{meeting.title}</h2>
-        <div className="meeting-meta">
-          <StatusBadge status={meeting.status} />
-          {meeting.language && <LanguageBadge language={meeting.language} />}
-          {meeting.duration_seconds != null && (
-            <span className="muted small">
-              {Math.round(meeting.duration_seconds / 60)} min{" "}
-              {Math.round(meeting.duration_seconds % 60)} s
-            </span>
-          )}
-          {canEdit && meeting.status === "completed" && (
-            <button className="btn" onClick={toggleShare}>
-              {shareToken ? "Revoke share link" : "🔗 Share"}
-            </button>
-          )}
+        <div>
+          <h2>{meeting.title}</h2>
+          <div className="meeting-meta">
+            <StatusBadge status={meeting.status} />
+            {meeting.language && <LanguageBadge language={meeting.language} />}
+            {meeting.duration_seconds != null && (
+              <span className="muted small">
+                {Math.round(meeting.duration_seconds / 60)} min{" "}
+                {Math.round(meeting.duration_seconds % 60)} s
+              </span>
+            )}
+          </div>
+          {shareMsg && <p className="muted small">{shareMsg}</p>}
         </div>
-        {shareMsg && <p className="muted small">{shareMsg}</p>}
+        {canEdit && meeting.status === "completed" && (
+          <button className="btn" onClick={toggleShare}>
+            {shareToken ? "Revoke share link" : "🔗 Share"}
+          </button>
+        )}
       </header>
 
       {meeting.status === "failed" && (

@@ -41,7 +41,7 @@ export function InviteBotBar({
           disabled={busy}
           onKeyDown={(e) => e.key === "Enter" && invite()}
         />
-        <button className="btn" onClick={invite} disabled={busy || !url.trim()}>
+        <button className="btn primary" onClick={invite} disabled={busy || !url.trim()}>
           Send Neu
         </button>
       </div>

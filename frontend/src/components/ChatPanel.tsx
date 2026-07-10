@@ -87,7 +87,7 @@ export function ChatPanel({ meetingId, ready }: { meetingId: string; ready: bool
           onChange={(e) => setInput(e.target.value)}
           disabled={busy}
         />
-        <button className="btn" type="submit" disabled={busy || !input.trim()}>
+        <button className="btn primary" type="submit" disabled={busy || !input.trim()}>
           Send
         </button>
       </form>
