@@ -47,6 +47,7 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-Neu AI <noreply@localhost>}
       SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+      AUDIO_RETENTION_DAYS: ${AUDIO_RETENTION_DAYS:-0}
     volumes:
       - uploads:/data/uploads
 

@@ -9,6 +9,7 @@ failed once attempts are exhausted.
 """
 
 import logging
+from pathlib import Path
 
 from ..database import SessionLocal
 from ..models import Meeting, Summary, TranscriptSegment
@@ -96,6 +97,13 @@ async def process_meeting_job(meeting_id: str) -> None:
                 await apply_diarization(wav_path, result.segments)
             except Exception:
                 logger.exception("Diarization failed for %s — continuing without speakers", meeting_id)
+
+    # The normalized WAV has served its purpose (transcription + diarization).
+    # It's the largest working file (~1 MB per 15s of audio) and is fully
+    # regenerable from the original on a re-run, so delete it now rather than
+    # letting it accumulate on disk.
+    if wav_path != audio_path:
+        Path(wav_path).unlink(missing_ok=True)
 
     # 4. Language tagging (heuristic + optional LLM fallback for ambiguous spans)
     _set_progress(meeting_id, 78, "Tagging languages")

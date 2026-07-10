@@ -11,6 +11,7 @@ from .routers import auth, bots, calendar, chat, meetings, workspaces
 from .services.autojoin import autojoin_loop
 from .services.bot_service import bot_poll_loop
 from .services.jobs import recover_stale_jobs, worker_loop
+from .services.retention import retention_loop
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 
@@ -25,11 +26,13 @@ async def lifespan(app: FastAPI):
     worker = asyncio.create_task(worker_loop(stop_event))
     autojoin = asyncio.create_task(autojoin_loop(stop_event))
     bot_poll = asyncio.create_task(bot_poll_loop(stop_event))
+    retention = asyncio.create_task(retention_loop(stop_event))
     yield
     stop_event.set()
     await worker
     await autojoin
     await bot_poll
+    await retention
 
 
 app = FastAPI(

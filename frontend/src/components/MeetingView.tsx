@@ -126,8 +126,13 @@ export function MeetingView({
         </div>
       )}
 
-      {meeting.status === "completed" && (
+      {meeting.status === "completed" && meeting.has_audio && (
         <AudioPlayer ref={audioRef} src={api.audioUrl(meeting.id)} onTimeUpdate={setPlayTime} />
+      )}
+      {meeting.status === "completed" && !meeting.has_audio && (
+        <p className="muted small">
+          Recording removed by the retention policy — transcript and summary are kept.
+        </p>
       )}
 
       <nav className="tabs">

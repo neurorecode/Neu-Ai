@@ -95,6 +95,16 @@ grant the new scope.
 Workspace SMTP or SendGrid). Left empty, recaps are written to the backend log
 instead of emailed — handy for testing.
 
+## Cost & disk hygiene (heavy daily use)
+
+- **Cheaper summaries:** set `ANTHROPIC_MODEL=claude-haiku-4-5` in `deploy/.env`
+  to cut LLM cost ~10× versus Opus. Transcription (Sarvam) is unaffected.
+- **Audio retention:** recordings are the only large artifact on disk. Set
+  `AUDIO_RETENTION_DAYS=30` (or any N) to auto-delete recordings older than N
+  days while keeping the transcript + summary forever. `0` (default) keeps
+  audio indefinitely. A background sweep runs every few hours and also cleans
+  up orphaned working files from interrupted runs.
+
 ## Day-2 operations
 
 | Task | Command (from `Neu-Ai/deploy`) |

@@ -47,6 +47,15 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./data/neu.db"
     upload_dir: str = "./data/uploads"
 
+    # ---- Audio retention (disk hygiene) ----
+    # Delete original recordings older than this many days, keeping the
+    # transcript + summary forever (those are tiny). 0 = keep audio forever.
+    # The normalized .norm.wav working file is always cleaned up right after
+    # transcription regardless of this setting.
+    audio_retention_days: int = 0
+    # How often the retention sweep runs, in hours.
+    retention_sweep_hours: float = 6.0
+
     # ---- Auth (Google sign-in) ----
     # When google_client_id is empty, the app runs in single-user dev mode:
     # every request is auto-authenticated as dev@localhost.

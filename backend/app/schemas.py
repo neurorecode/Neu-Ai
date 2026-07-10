@@ -39,6 +39,7 @@ class MeetingOut(BaseModel):
     progress: int
     stage: str | None
     source: str
+    has_audio: bool
     created_at: datetime
 
 

@@ -134,6 +134,12 @@ class Meeting(Base):
         back_populates="meeting", cascade="all, delete-orphan", order_by="ChatMessage.created_at"
     )
 
+    @property
+    def has_audio(self) -> bool:
+        """Whether a playable recording still exists (may be purged by the
+        retention policy while the transcript/summary are kept)."""
+        return self.audio_path is not None
+
 
 class TranscriptSegment(Base):
     __tablename__ = "transcript_segments"

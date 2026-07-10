@@ -17,6 +17,7 @@ export interface Meeting {
   progress: number;
   stage: string | null;
   source: "upload" | "bot";
+  has_audio: boolean;
   created_at: string;
 }
 
