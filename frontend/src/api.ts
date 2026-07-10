@@ -139,11 +139,15 @@ export const api = {
   search: (q: string) =>
     request<SearchHit[]>(`/api/meetings/search?q=${encodeURIComponent(q)}`),
 
-  ask: (question: string, workspaceId?: string) =>
+  ask: (
+    question: string,
+    history: { role: string; content: string }[] = [],
+    workspaceId?: string,
+  ) =>
     request<AskResponse>("/api/ask", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question, workspace_id: workspaceId }),
+      body: JSON.stringify({ question, history, workspace_id: workspaceId }),
     }),
 
   getTasks: (workspaceId?: string) =>

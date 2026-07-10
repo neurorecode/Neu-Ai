@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
-import type { AskResponse } from "../types";
+import type { AskSource } from "../types";
 import { Markdown } from "./Markdown";
 
 const SUGGESTIONS = [
@@ -9,6 +9,12 @@ const SUGGESTIONS = [
   "Summarize everything about the payment gateway",
   "எல்லா மீட்டிங்கிலும் என்ன முக்கிய முடிவுகள்?",
 ];
+
+type Msg = {
+  role: "user" | "assistant";
+  content: string;
+  sources?: AskSource[];
+};
 
 export function AskPanel({
   workspaceId,
@@ -19,22 +25,30 @@ export function AskPanel({
   onOpenMeeting: (id: string) => void;
   onClose: () => void;
 }) {
-  const [question, setQuestion] = useState("");
-  const [asked, setAsked] = useState<string | null>(null);
-  const [result, setResult] = useState<AskResponse | null>(null);
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
-  async function ask(text: string) {
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, busy]);
+
+  async function send(text: string) {
     const q = text.trim();
     if (!q || busy) return;
     setBusy(true);
     setError(null);
-    setResult(null);
-    setAsked(q);
+    setInput("");
+    const history = messages.map((m) => ({ role: m.role, content: m.content }));
+    setMessages((prev) => [...prev, { role: "user", content: q }]);
     try {
-      setResult(await api.ask(q, workspaceId));
+      const res = await api.ask(q, history, workspaceId);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: res.answer, sources: res.sources },
+      ]);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -46,61 +60,43 @@ export function AskPanel({
     <div className="ask-panel">
       <header className="meeting-header">
         <div>
-          <h2>Ask across all meetings</h2>
+          <h2>Ask Neu</h2>
           <p className="muted small">
-            One question, answered from every meeting in this workspace — with citations.
+            A conversation across every meeting in this workspace — with citations.
           </p>
         </div>
-        <button className="btn" onClick={onClose}>
-          ← Back
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          {messages.length > 0 && (
+            <button className="btn" onClick={() => setMessages([])}>
+              New chat
+            </button>
+          )}
+          <button className="btn" onClick={onClose}>
+            ← Back
+          </button>
+        </div>
       </header>
 
-      <form
-        className="ask-input"
-        onSubmit={(e) => {
-          e.preventDefault();
-          ask(question);
-        }}
-      >
-        <input
-          ref={inputRef}
-          type="text"
-          placeholder="Ask in Tamil, English, or Tanglish…"
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          disabled={busy}
-        />
-        <button className="btn primary" type="submit" disabled={busy || !question.trim()}>
-          Ask
-        </button>
-      </form>
+      <div className="chat">
+        <div className="chat-messages">
+          {messages.length === 0 && (
+            <div className="chat-suggestions">
+              <p className="muted">Ask anything across your meetings — in any of the three languages:</p>
+              {SUGGESTIONS.map((s) => (
+                <button key={s} className="suggestion" onClick={() => send(s)}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
 
-      {!asked && !busy && (
-        <div className="chat-suggestions">
-          <p className="muted">Try one of these:</p>
-          {SUGGESTIONS.map((s) => (
-            <button key={s} className="suggestion" onClick={() => ask(s)}>
-              {s}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {asked && (
-        <div className="ask-result">
-          <div className="ask-question">{asked}</div>
-          {busy && <div className="chat-bubble assistant thinking">Neu is reading your meetings…</div>}
-          {error && <div className="error-banner">{error}</div>}
-          {result && (
-            <>
-              <div className="chat-bubble assistant ask-answer">
-                <Markdown text={result.answer} />
-              </div>
-              {result.sources.length > 0 && (
+          {messages.map((m, i) => (
+            <div key={i} className={`chat-bubble ${m.role}`}>
+              {m.role === "assistant" ? <Markdown text={m.content} /> : m.content}
+              {m.sources && m.sources.length > 0 && (
                 <div className="ask-sources">
                   <span className="muted small">Sources:</span>
-                  {result.sources.map((s) => (
+                  {m.sources.map((s) => (
                     <button
                       key={s.meeting_id}
                       className="source-chip"
@@ -111,10 +107,33 @@ export function AskPanel({
                   ))}
                 </div>
               )}
-            </>
-          )}
+            </div>
+          ))}
+
+          {busy && <div className="chat-bubble assistant thinking">Neu is reading your meetings…</div>}
+          {error && <p className="error small">{error}</p>}
+          <div ref={bottomRef} />
         </div>
-      )}
+
+        <form
+          className="chat-input"
+          onSubmit={(e) => {
+            e.preventDefault();
+            send(input);
+          }}
+        >
+          <input
+            type="text"
+            placeholder="Ask a question or a follow-up…"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            disabled={busy}
+          />
+          <button className="btn primary" type="submit" disabled={busy || !input.trim()}>
+            Send
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

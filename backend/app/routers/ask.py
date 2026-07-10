@@ -33,5 +33,6 @@ async def ask(
     if not workspace_ids:
         return AskResponse(answer="You don't have any meetings yet.", sources=[])
 
-    answer, sources = await ask_across_meetings(db, workspace_ids, question)
+    history = [{"role": m.role, "content": m.content} for m in body.history]
+    answer, sources = await ask_across_meetings(db, workspace_ids, question, history)
     return AskResponse(answer=answer, sources=sources)

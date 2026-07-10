@@ -61,6 +61,26 @@ def test_ask_rejects_empty_question(client):
 
 
 @pytest.mark.skipif(not ffmpeg_available(), reason="needs ffmpeg to decode test audio")
+def test_ask_accepts_conversation_history(client, tmp_path):
+    # A follow-up with little content of its own should still retrieve meetings
+    # by leaning on the prior turn's keywords (Redis).
+    _completed_meeting(client, tmp_path, "Caching decision call")
+    resp = client.post(
+        "/api/ask",
+        json={
+            "question": "who decided that?",
+            "history": [
+                {"role": "user", "content": "What did we decide about Redis?"},
+                {"role": "assistant", "content": "You agreed to use Redis for caching."},
+            ],
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    # History is accepted and retrieval runs (returns cited meetings).
+    assert len(resp.json()["sources"]) >= 1
+
+
+@pytest.mark.skipif(not ffmpeg_available(), reason="needs ffmpeg to decode test audio")
 def test_ask_recent_fallback_when_no_keyword_match(client, tmp_path):
     # A question whose keywords match nothing should still return recent meetings
     # so "summarize this week" style queries work.

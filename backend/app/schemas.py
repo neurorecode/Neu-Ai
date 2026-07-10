@@ -199,9 +199,15 @@ class TaskToggle(BaseModel):
     done: bool
 
 
+class AskMessage(BaseModel):
+    role: str  # user | assistant
+    content: str
+
+
 class AskRequest(BaseModel):
     question: str
     workspace_id: str | None = None
+    history: list[AskMessage] = []
 
 
 class AskSource(BaseModel):

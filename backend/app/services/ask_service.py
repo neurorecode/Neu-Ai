@@ -34,20 +34,23 @@ SNIPPET_CHARS = 240
 SYSTEM_TEMPLATE = """You are Neu, an AI meeting assistant for Tamil, English and Tanglish \
 (Tamil-English code-mixed) meetings — similar to Fireflies or Avoma, built for Tamil speakers.
 
-You are answering a question that spans MULTIPLE meetings. Below is context drawn from the \
-user's most relevant meetings: each block has the meeting title, date, its summary, and \
-selected transcript snippets with timestamps.
+You are having a CONVERSATION with the user about their meetings. Below is context drawn from \
+their most relevant meetings: each block has the meeting title, date, its summary, and \
+selected transcript snippets with timestamps. The conversation may include earlier turns — \
+use them to resolve follow-ups like "tell me more about that" or "who owns it?".
 
 Rules:
-- Answer in the SAME language style the user writes in: English question → English answer; \
-Tamil script → Tamil script; Tanglish → Tanglish.
-- Synthesize across meetings. When you state a fact, cite the meeting it came from by title \
-and date, e.g. "(Sales Team Stand up call, 11 Jul)".
+- Be conversational and natural. It's fine to greet back, acknowledge, and ask a clarifying \
+question when the request is vague.
+- Answer in the SAME language style the user writes in: English → English; Tamil script → \
+Tamil script; Tanglish → Tanglish.
+- Synthesize across meetings. When you state a fact from a meeting, cite it by title and date, \
+e.g. "(Sales Team Stand up call, 11 Jul)".
 - For "action items" / "decisions" questions, gather them from every relevant meeting and \
 group clearly.
-- Ground every answer in the context. If the context doesn't contain the answer, say so \
-honestly rather than guessing.
-- Be concise and well-structured (use short bullet lists where it helps).
+- Ground factual claims in the context. If the context doesn't contain the answer, say so \
+honestly rather than inventing details.
+- Be concise and well-structured (short bullet lists where they help).
 
 CONTEXT:
 {context}"""
@@ -166,10 +169,23 @@ def build_context(meetings: list[Meeting], keywords: list[str]) -> tuple[str, li
     return "\n\n".join(blocks), sources
 
 
+MAX_HISTORY = 12
+
+
 async def ask_across_meetings(
-    db: Session, workspace_ids: list[str], question: str
+    db: Session,
+    workspace_ids: list[str],
+    question: str,
+    history: list[dict] | None = None,
 ) -> tuple[str, list[dict]]:
-    keywords = _keywords(question)
+    history = history or []
+    # Retrieve using the current question plus the previous user turn, so
+    # follow-ups ("tell me more about that", "who owns it?") still pull the
+    # right meetings even when the follow-up itself has few keywords.
+    prev_user = next(
+        (m["content"] for m in reversed(history) if m.get("role") == "user"), ""
+    )
+    keywords = _keywords(f"{prev_user} {question}")
     meetings = _rank_meetings(db, workspace_ids, keywords)
 
     if not meetings:
@@ -187,6 +203,13 @@ async def ask_across_meetings(
             sources,
         )
 
+    messages = [
+        {"role": m["role"], "content": m["content"]}
+        for m in history[-MAX_HISTORY:]
+        if m.get("role") in ("user", "assistant") and m.get("content")
+    ]
+    messages.append({"role": "user", "content": question})
+
     client = AsyncAnthropic(api_key=settings.anthropic_api_key)
     system = SYSTEM_TEMPLATE.format(context=context)
     response = await client.messages.create(
@@ -194,7 +217,7 @@ async def ask_across_meetings(
         max_tokens=4096,
         thinking={"type": "adaptive"},
         system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
-        messages=[{"role": "user", "content": question}],
+        messages=messages,
     )
     answer = next((b.text for b in response.content if b.type == "text"), "")
     return answer, sources
