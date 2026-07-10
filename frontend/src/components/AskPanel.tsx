@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { api } from "../api";
 import type { AskResponse } from "../types";
+import { Markdown } from "./Markdown";
 
 const SUGGESTIONS = [
   "What are all my open action items?",
@@ -93,7 +94,9 @@ export function AskPanel({
           {error && <div className="error-banner">{error}</div>}
           {result && (
             <>
-              <div className="chat-bubble assistant ask-answer">{result.answer}</div>
+              <div className="chat-bubble assistant ask-answer">
+                <Markdown text={result.answer} />
+              </div>
               {result.sources.length > 0 && (
                 <div className="ask-sources">
                   <span className="muted small">Sources:</span>

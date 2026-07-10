@@ -689,9 +689,34 @@ input[type="text"]:focus {
 }
 
 .ask-answer {
-  white-space: pre-wrap;
   line-height: 1.6;
   max-width: 100%;
+}
+
+/* ---------- Markdown rendering (Ask answers + chat) ---------- */
+.md > p {
+  margin: 0 0 8px;
+}
+.md > p:last-child {
+  margin-bottom: 0;
+}
+.md .md-heading {
+  font-weight: 700;
+  margin-top: 12px;
+}
+.md ul,
+.md ol {
+  margin: 4px 0 10px;
+  padding-left: 20px;
+}
+.md li {
+  margin: 2px 0;
+}
+.md code {
+  background: var(--bg-hover);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.9em;
 }
 
 .ask-sources {

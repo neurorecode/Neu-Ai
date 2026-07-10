@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
 import type { ChatMessage } from "../types";
+import { Markdown } from "./Markdown";
 
 const SUGGESTIONS = [
   "What are my action items?",
@@ -65,7 +66,7 @@ export function ChatPanel({ meetingId, ready }: { meetingId: string; ready: bool
         )}
         {messages.map((m) => (
           <div key={m.id} className={`chat-bubble ${m.role}`}>
-            {m.content}
+            {m.role === "assistant" ? <Markdown text={m.content} /> : m.content}
           </div>
         ))}
         {busy && <div className="chat-bubble assistant thinking">Neu is thinking…</div>}
