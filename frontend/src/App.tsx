@@ -5,20 +5,21 @@ import { AskPanel } from "./components/AskPanel";
 import { CalendarPanel } from "./components/CalendarPanel";
 import { InviteBotBar } from "./components/InviteBotBar";
 import { LoginScreen } from "./components/LoginScreen";
-import { MeetingList } from "./components/MeetingList";
+import { MeetingsTable } from "./components/MeetingsTable";
 import { MeetingView } from "./components/MeetingView";
 import { NewMeetingPanel } from "./components/NewMeetingPanel";
-import { SearchBar } from "./components/SearchBar";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { SharedMeetingView } from "./components/SharedMeetingView";
-import { WorkspaceBar } from "./components/WorkspaceBar";
+import { Sidebar, type NavKey } from "./components/Sidebar";
+import { BackIcon } from "./components/icons";
 
 type View =
-  | { kind: "meeting"; id: string }
-  | { kind: "settings" }
-  | { kind: "calendar" }
+  | { kind: "home" }
+  | { kind: "meetings" }
   | { kind: "ask" }
-  | { kind: "home" };
+  | { kind: "calendar" }
+  | { kind: "settings" }
+  | { kind: "meeting"; id: string };
 
 export default function App() {
   // Public share links render without any auth: /share/{token}
@@ -44,7 +45,6 @@ function AuthedApp() {
         const me = await api.me();
         setUser(me);
 
-        // Accept a pending invite passed as /?invite=TOKEN
         const inviteToken = new URLSearchParams(window.location.search).get("invite");
         let joined: Workspace | null = null;
         if (inviteToken) {
@@ -85,7 +85,6 @@ function AuthedApp() {
 
   useEffect(() => {
     refreshMeetings();
-    setView({ kind: "home" });
   }, [refreshMeetings]);
 
   useEffect(() => {
@@ -104,86 +103,97 @@ function AuthedApp() {
     return <LoginScreen />;
   }
 
+  const activeNav: NavKey = view.kind === "meeting" ? "meetings" : view.kind;
+  const canEdit = workspace?.role !== "viewer";
+
   return (
     <div className="app">
-      <aside className="sidebar">
-        <div className="brand">
-          <span className="brand-logo">நீ</span>
-          <div>
-            <h1>Neu AI</h1>
-            <p>தமிழ் · English · Tanglish</p>
-          </div>
-        </div>
-
-        <WorkspaceBar
-          user={user!}
-          workspaces={workspaces}
-          currentId={workspaceId}
-          onSwitch={(id) => {
-            localStorage.setItem("neu_workspace", id);
-            setWorkspaceId(id);
-          }}
-          onCreate={async (name) => {
-            const ws = await api.createWorkspace(name);
-            setWorkspaces((prev) => [...prev, ws]);
-            localStorage.setItem("neu_workspace", ws.id);
-            setWorkspaceId(ws.id);
-          }}
-          onOpenSettings={() => setView({ kind: "settings" })}
-          onLogout={async () => {
-            await api.logout();
-            window.location.reload();
-          }}
-        />
-
-        {workspace?.role !== "viewer" && (
-          <>
-            <NewMeetingPanel workspaceId={workspaceId ?? undefined} onCreated={refreshMeetings} />
-            <InviteBotBar
-              workspaceId={workspaceId ?? undefined}
-              onInvited={refreshMeetings}
-              onOpenCalendar={() => setView({ kind: "calendar" })}
-            />
-          </>
-        )}
-        <SearchBar onSelect={(id) => setView({ kind: "meeting", id })} />
-
-        <button
-          className="ask-link"
-          onClick={() => setView({ kind: "ask" })}
-        >
-          ✨ Ask across all meetings
-        </button>
-
-        {error && <div className="error-banner">{error}</div>}
-
-        <MeetingList
-          meetings={meetings}
-          selectedId={view.kind === "meeting" ? view.id : null}
-          onSelect={(id) => setView({ kind: "meeting", id })}
-          onDelete={async (id) => {
-            await api.deleteMeeting(id);
-            if (view.kind === "meeting" && view.id === id) setView({ kind: "home" });
-            refreshMeetings();
-          }}
-        />
-      </aside>
+      <Sidebar
+        user={user!}
+        workspaces={workspaces}
+        currentId={workspaceId}
+        active={activeNav}
+        onNavigate={(key) => setView({ kind: key })}
+        onSwitch={(id) => {
+          localStorage.setItem("neu_workspace", id);
+          setWorkspaceId(id);
+        }}
+        onCreate={async (name) => {
+          const ws = await api.createWorkspace(name);
+          setWorkspaces((prev) => [...prev, ws]);
+          localStorage.setItem("neu_workspace", ws.id);
+          setWorkspaceId(ws.id);
+        }}
+        onLogout={async () => {
+          await api.logout();
+          window.location.reload();
+        }}
+      />
 
       <main className="main">
+        {error && <div className="error-banner">{error}</div>}
+
+        {view.kind === "home" && (
+          <div className="page">
+            <div className="page-head">
+              <div>
+                <h2 className="page-title">Home</h2>
+                <p className="page-sub">
+                  Upload a recording, capture live, or send Neu to a call.
+                </p>
+              </div>
+            </div>
+            {canEdit && (
+              <div className="home-cards">
+                <section className="home-card">
+                  <h3>New recording</h3>
+                  <p className="muted small">Upload an audio/video file or record from your mic.</p>
+                  <NewMeetingPanel
+                    workspaceId={workspaceId ?? undefined}
+                    onCreated={() => {
+                      refreshMeetings();
+                      setView({ kind: "meetings" });
+                    }}
+                  />
+                </section>
+                <section className="home-card">
+                  <h3>Send Neu to a meeting</h3>
+                  <p className="muted small">Paste a Meet / Zoom / Teams link and Neu joins to take notes.</p>
+                  <InviteBotBar
+                    workspaceId={workspaceId ?? undefined}
+                    onInvited={() => {
+                      refreshMeetings();
+                      setView({ kind: "meetings" });
+                    }}
+                    onOpenCalendar={() => setView({ kind: "calendar" })}
+                  />
+                </section>
+              </div>
+            )}
+          </div>
+        )}
+
+        {view.kind === "meetings" && (
+          <MeetingsTable
+            meetings={meetings}
+            onSelect={(id) => setView({ kind: "meeting", id })}
+            onNew={() => setView({ kind: "home" })}
+            onDelete={async (id) => {
+              await api.deleteMeeting(id);
+              refreshMeetings();
+            }}
+          />
+        )}
+
         {view.kind === "meeting" && (
-          <MeetingView
-            meetingId={view.id}
-            key={view.id}
-            canEdit={workspace?.role !== "viewer"}
-          />
+          <div className="page">
+            <button className="back-link" onClick={() => setView({ kind: "meetings" })}>
+              <BackIcon size={16} /> Meetings
+            </button>
+            <MeetingView meetingId={view.id} key={view.id} canEdit={canEdit} />
+          </div>
         )}
-        {view.kind === "calendar" && (
-          <CalendarPanel
-            workspaceId={workspaceId ?? undefined}
-            onJoined={refreshMeetings}
-            onClose={() => setView({ kind: "home" })}
-          />
-        )}
+
         {view.kind === "ask" && (
           <AskPanel
             workspaceId={workspaceId ?? undefined}
@@ -191,6 +201,15 @@ function AuthedApp() {
             onClose={() => setView({ kind: "home" })}
           />
         )}
+
+        {view.kind === "calendar" && (
+          <CalendarPanel
+            workspaceId={workspaceId ?? undefined}
+            onJoined={refreshMeetings}
+            onClose={() => setView({ kind: "home" })}
+          />
+        )}
+
         {view.kind === "settings" && workspace && (
           <SettingsPanel
             workspace={workspace}
@@ -200,17 +219,6 @@ function AuthedApp() {
             }
             onClose={() => setView({ kind: "home" })}
           />
-        )}
-        {view.kind === "home" && (
-          <div className="empty-state">
-            <h2>Your AI meeting assistant for Tamil, English &amp; Tanglish</h2>
-            <p>
-              Upload a recording or record live. Neu transcribes it, tags each
-              utterance as தமிழ், English, or Tanglish, and writes a bilingual
-              summary with action items &amp; decisions. Then chat with the
-              meeting in whichever language you like.
-            </p>
-          </div>
         )}
       </main>
     </div>

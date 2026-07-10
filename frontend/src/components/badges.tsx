@@ -13,14 +13,21 @@ export function LanguageBadge({ language }: { language: Language }) {
   );
 }
 
-const STATUS_LABELS: Record<MeetingStatus, string> = {
-  uploaded: "Queued",
-  transcribing: "Transcribing…",
-  summarizing: "Summarizing…",
-  completed: "Ready",
-  failed: "Failed",
+// Group the pipeline states into three visual buckets like Leap's pills.
+const STATUS_META: Record<MeetingStatus, { label: string; tone: string }> = {
+  uploaded: { label: "Queued", tone: "pending" },
+  transcribing: { label: "Transcribing", tone: "running" },
+  summarizing: { label: "Summarizing", tone: "running" },
+  completed: { label: "Complete", tone: "done" },
+  failed: { label: "Failed", tone: "failed" },
 };
 
 export function StatusBadge({ status }: { status: MeetingStatus }) {
-  return <span className={`badge status-${status}`}>{STATUS_LABELS[status] ?? status}</span>;
+  const meta = STATUS_META[status] ?? { label: status, tone: "pending" };
+  return (
+    <span className={`pill pill-${meta.tone}`}>
+      <span className="pill-dot" />
+      {meta.label}
+    </span>
+  );
 }
