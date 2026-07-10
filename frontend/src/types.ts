@@ -84,14 +84,17 @@ export interface AskResponse {
   sources: AskSource[];
 }
 
-export interface TaskItem {
-  meeting_id: string;
-  meeting_title: string;
-  index: number;
-  task: string;
+export type TaskStatus = "todo" | "doing" | "done";
+
+export interface Task {
+  id: string;
+  title: string;
   owner: string | null;
   due: string | null;
-  done: boolean;
+  status: TaskStatus;
+  source: "meeting" | "manual";
+  meeting_id: string | null;
+  archived: boolean;
   created_at: string;
 }
 

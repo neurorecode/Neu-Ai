@@ -3,7 +3,7 @@ import type {
   CalendarEvent,
   CalendarStatus,
   ChatMessage,
-  TaskItem,
+  Task,
   Invite,
   Meeting,
   MeetingDetail,
@@ -151,14 +151,32 @@ export const api = {
     }),
 
   getTasks: (workspaceId?: string) =>
-    request<TaskItem[]>(workspaceId ? `/api/tasks?workspace_id=${workspaceId}` : "/api/tasks"),
+    request<Task[]>(workspaceId ? `/api/tasks?workspace_id=${workspaceId}` : "/api/tasks"),
 
-  toggleTask: (meetingId: string, index: number, done: boolean) =>
-    request<TaskItem>(`/api/tasks/${meetingId}/${index}`, {
+  createTask: (body: {
+    title: string;
+    owner?: string | null;
+    due?: string | null;
+    status?: string;
+    workspace_id?: string;
+  }) =>
+    request<Task>("/api/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+
+  updateTask: (
+    id: string,
+    body: { title?: string; owner?: string | null; due?: string | null; status?: string },
+  ) =>
+    request<Task>(`/api/tasks/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ done }),
+      body: JSON.stringify(body),
     }),
+
+  deleteTask: (id: string) => request<void>(`/api/tasks/${id}`, { method: "DELETE" }),
 
   getChat: (meetingId: string) =>
     request<ChatMessage[]>(`/api/meetings/${meetingId}/chat`),

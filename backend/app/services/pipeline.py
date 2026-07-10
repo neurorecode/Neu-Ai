@@ -171,6 +171,11 @@ async def process_meeting_job(meeting_id: str) -> None:
     finally:
         db.close()
 
+    # Populate the Tasks board from this meeting's action items.
+    from .task_sync import sync_meeting_tasks
+
+    sync_meeting_tasks(meeting_id)
+
     # Email the recap to the meeting creator (no-op in dev / when SMTP unset).
     from .email_recap import send_recap
 
@@ -230,3 +235,8 @@ async def summarize_meeting_job(meeting_id: str) -> None:
         db.commit()
     finally:
         db.close()
+
+    # Sync any newly-surfaced action items onto the Tasks board.
+    from .task_sync import sync_meeting_tasks
+
+    sync_meeting_tasks(meeting_id)

@@ -1,5 +1,7 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+
+ARCHIVE_AFTER_DAYS = 30
 
 from sqlalchemy import JSON, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -196,6 +198,46 @@ class MeetingBot(Base):
     updated_at: Mapped[datetime] = mapped_column(default=_now, onupdate=_now)
 
     meeting: Mapped[Meeting] = relationship(back_populates="bot")
+
+
+class Task(Base):
+    """A workspace task on the Kanban board.
+
+    Tasks come from two sources: `meeting` (auto-extracted from a meeting's
+    action items) and `manual` (created by a user). Status drives the board
+    columns; done_at powers the 30-day auto-archive.
+    """
+
+    __tablename__ = "tasks"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_id)
+    workspace_id: Mapped[str | None] = mapped_column(
+        ForeignKey("workspaces.id"), index=True, nullable=True
+    )
+    created_by: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    # source meeting for auto-extracted tasks (null for manual tasks)
+    meeting_id: Mapped[str | None] = mapped_column(
+        ForeignKey("meetings.id"), index=True, nullable=True
+    )
+    title: Mapped[str] = mapped_column(Text)
+    owner: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    due: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    # todo | doing | done  (Kanban columns)
+    status: Mapped[str] = mapped_column(String(20), default="todo", index=True)
+    # meeting | manual
+    source: Mapped[str] = mapped_column(String(20), default="manual")
+    # set when moved to done; drives the 30-day archive
+    done_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=_now)
+    updated_at: Mapped[datetime] = mapped_column(default=_now, onupdate=_now)
+
+    @property
+    def archived(self) -> bool:
+        """Done tasks auto-hide from the board after 30 days (still searchable)."""
+        if self.status != "done" or self.done_at is None:
+            return False
+        dt = self.done_at if self.done_at.tzinfo else self.done_at.replace(tzinfo=timezone.utc)
+        return dt < datetime.now(timezone.utc) - timedelta(days=ARCHIVE_AFTER_DAYS)
 
 
 class Job(Base):

@@ -22,6 +22,10 @@ async def lifespan(app: FastAPI):
     run_sqlite_auto_migrations()
     recover_stale_jobs()
 
+    from .services.task_sync import backfill_tasks
+
+    backfill_tasks()
+
     stop_event = asyncio.Event()
     worker = asyncio.create_task(worker_loop(stop_event))
     autojoin = asyncio.create_task(autojoin_loop(stop_event))

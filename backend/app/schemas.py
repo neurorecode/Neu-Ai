@@ -180,14 +180,17 @@ class SearchHit(BaseModel):
     start: float | None
 
 
-class TaskItem(BaseModel):
-    meeting_id: str
-    meeting_title: str
-    index: int
-    task: str
+class TaskOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    title: str
     owner: str | None
     due: str | None
-    done: bool
+    status: str  # todo | doing | done
+    source: str  # meeting | manual
+    meeting_id: str | None
+    archived: bool = False
     created_at: datetime
 
     @field_serializer("created_at")
@@ -195,8 +198,19 @@ class TaskItem(BaseModel):
         return _utc_iso(dt)
 
 
-class TaskToggle(BaseModel):
-    done: bool
+class TaskCreate(BaseModel):
+    title: str
+    owner: str | None = None
+    due: str | None = None
+    status: str = "todo"
+    workspace_id: str | None = None
+
+
+class TaskUpdate(BaseModel):
+    title: str | None = None
+    owner: str | None = None
+    due: str | None = None
+    status: str | None = None
 
 
 class AskMessage(BaseModel):
