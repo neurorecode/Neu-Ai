@@ -3,6 +3,7 @@ import type {
   CalendarEvent,
   CalendarStatus,
   ChatMessage,
+  TaskItem,
   Invite,
   Meeting,
   MeetingDetail,
@@ -143,6 +144,16 @@ export const api = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question, workspace_id: workspaceId }),
+    }),
+
+  getTasks: (workspaceId?: string) =>
+    request<TaskItem[]>(workspaceId ? `/api/tasks?workspace_id=${workspaceId}` : "/api/tasks"),
+
+  toggleTask: (meetingId: string, index: number, done: boolean) =>
+    request<TaskItem>(`/api/tasks/${meetingId}/${index}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ done }),
     }),
 
   getChat: (meetingId: string) =>

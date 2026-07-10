@@ -84,6 +84,17 @@ export interface AskResponse {
   sources: AskSource[];
 }
 
+export interface TaskItem {
+  meeting_id: string;
+  meeting_title: string;
+  index: number;
+  task: string;
+  owner: string | null;
+  due: string | null;
+  done: boolean;
+  created_at: string;
+}
+
 export interface User {
   id: string;
   email: string;

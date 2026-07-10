@@ -572,6 +572,123 @@ input[type="text"]:focus {
   gap: 12px;
 }
 
+/* ---------- Tasks ---------- */
+.seg-toggle {
+  display: flex;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.seg-toggle button {
+  padding: 7px 14px;
+  background: var(--bg-elev);
+  border: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.seg-toggle button.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.task-list {
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-elev);
+  box-shadow: var(--shadow-sm);
+}
+
+.task-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.task-row:last-child {
+  border-bottom: none;
+}
+
+.task-check {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border: 1.8px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--bg-elev);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.task-check.checked {
+  background: #22c55e;
+  border-color: #22c55e;
+}
+
+.task-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.task-text {
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.task-row.done .task-text {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.task-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.task-owner {
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg-sunken);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.task-due {
+  color: var(--text-muted);
+}
+
+.task-source {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+}
+
+.task-source:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
 /* ---------- Pills & badges ---------- */
 .pill {
   display: inline-flex;

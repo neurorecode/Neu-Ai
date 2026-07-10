@@ -93,3 +93,14 @@ export const BackIcon = ({ size }: P) => (
     <path d="M15 18l-6-6 6-6" />
   </svg>
 );
+export const CheckSquareIcon = ({ size }: P) => (
+  <svg {...base(size)}>
+    <path d="M9 11.5l2.2 2.2L15.5 9" />
+    <rect x="3.5" y="3.5" width="17" height="17" rx="4" />
+  </svg>
+);
+export const CheckIcon = ({ size }: P) => (
+  <svg {...base(size)}>
+    <path d="M5 12.5l4.5 4.5L19 7" />
+  </svg>
+);

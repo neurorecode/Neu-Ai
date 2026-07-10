@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .database import Base, engine, run_sqlite_auto_migrations
-from .routers import ask, auth, bots, calendar, chat, meetings, workspaces
+from .routers import ask, auth, bots, calendar, chat, meetings, tasks, workspaces
 from .services.autojoin import autojoin_loop
 from .services.bot_service import bot_poll_loop
 from .services.jobs import recover_stale_jobs, worker_loop
@@ -63,6 +63,7 @@ app.include_router(bots.webhook_router)
 app.include_router(calendar.router)
 app.include_router(chat.router)
 app.include_router(ask.router)
+app.include_router(tasks.router)
 
 
 @app.get("/api/health")

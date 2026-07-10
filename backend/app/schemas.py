@@ -180,6 +180,25 @@ class SearchHit(BaseModel):
     start: float | None
 
 
+class TaskItem(BaseModel):
+    meeting_id: str
+    meeting_title: str
+    index: int
+    task: str
+    owner: str | None
+    due: str | None
+    done: bool
+    created_at: datetime
+
+    @field_serializer("created_at")
+    def _ser_created_at(self, dt: datetime) -> str | None:
+        return _utc_iso(dt)
+
+
+class TaskToggle(BaseModel):
+    done: bool
+
+
 class AskRequest(BaseModel):
     question: str
     workspace_id: str | None = None

@@ -1,6 +1,7 @@
 import type { User, Workspace } from "../types";
 import {
   CalendarIcon,
+  CheckSquareIcon,
   ChevronDown,
   HomeIcon,
   ListIcon,
@@ -9,11 +10,12 @@ import {
   SparkIcon,
 } from "./icons";
 
-export type NavKey = "home" | "meetings" | "ask" | "calendar" | "settings";
+export type NavKey = "home" | "meetings" | "tasks" | "ask" | "calendar" | "settings";
 
 const NAV: { key: NavKey; label: string; Icon: (p: { size?: number }) => JSX.Element }[] = [
   { key: "home", label: "Home", Icon: HomeIcon },
   { key: "meetings", label: "Meetings", Icon: ListIcon },
+  { key: "tasks", label: "Tasks", Icon: CheckSquareIcon },
   { key: "ask", label: "Ask Neu", Icon: SparkIcon },
   { key: "calendar", label: "Calendar", Icon: CalendarIcon },
 ];

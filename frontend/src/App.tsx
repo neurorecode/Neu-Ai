@@ -9,6 +9,7 @@ import { MeetingsTable } from "./components/MeetingsTable";
 import { MeetingView } from "./components/MeetingView";
 import { NewMeetingPanel } from "./components/NewMeetingPanel";
 import { SettingsPanel } from "./components/SettingsPanel";
+import { TasksPage } from "./components/TasksPage";
 import { SharedMeetingView } from "./components/SharedMeetingView";
 import { Sidebar, type NavKey } from "./components/Sidebar";
 import { BackIcon } from "./components/icons";
@@ -16,6 +17,7 @@ import { BackIcon } from "./components/icons";
 type View =
   | { kind: "home" }
   | { kind: "meetings" }
+  | { kind: "tasks" }
   | { kind: "ask" }
   | { kind: "calendar" }
   | { kind: "settings" }
@@ -192,6 +194,13 @@ function AuthedApp() {
             </button>
             <MeetingView meetingId={view.id} key={view.id} canEdit={canEdit} />
           </div>
+        )}
+
+        {view.kind === "tasks" && (
+          <TasksPage
+            workspaceId={workspaceId ?? undefined}
+            onOpenMeeting={(id) => setView({ kind: "meeting", id })}
+          />
         )}
 
         {view.kind === "ask" && (
