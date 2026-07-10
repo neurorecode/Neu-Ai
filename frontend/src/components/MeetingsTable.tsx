@@ -5,8 +5,15 @@ import { BotIcon, DotsIcon, PlusIcon, SearchIcon } from "./icons";
 
 const PAGE_SIZE = 12;
 
+// Backend timestamps are UTC. If an offset is ever missing, treat as UTC
+// (a bare "…T..:..:.." would otherwise be parsed as browser-local time).
+function parseUTC(iso: string): Date {
+  const hasTz = /[zZ]|[+-]\d\d:?\d\d$/.test(iso);
+  return new Date(hasTz ? iso : `${iso}Z`);
+}
+
 function relDate(iso: string): string {
-  const d = new Date(iso);
+  const d = parseUTC(iso);
   const diff = (Date.now() - d.getTime()) / 1000;
   if (diff < 60) return "just now";
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;

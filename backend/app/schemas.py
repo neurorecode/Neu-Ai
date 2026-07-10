@@ -1,6 +1,21 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_serializer
+
+
+def _utc_iso(dt: datetime | None) -> str | None:
+    """Serialize a datetime as ISO-8601 with an explicit UTC offset.
+
+    The DB stores naive UTC timestamps (the TIMESTAMP column drops tzinfo), so
+    without this the JSON has no offset and browsers parse it as *local* time —
+    shifting every 'X ago' by the viewer's timezone. Stamping +00:00 fixes it
+    for every client.
+    """
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.isoformat()
 
 
 class SegmentOut(BaseModel):
@@ -42,6 +57,10 @@ class MeetingOut(BaseModel):
     has_audio: bool
     created_at: datetime
 
+    @field_serializer("created_at")
+    def _ser_created_at(self, dt: datetime) -> str | None:
+        return _utc_iso(dt)
+
 
 class MeetingDetail(MeetingOut):
     segments: list[SegmentOut]
@@ -55,6 +74,10 @@ class ChatMessageOut(BaseModel):
     role: str
     content: str
     created_at: datetime
+
+    @field_serializer("created_at")
+    def _ser_created_at(self, dt: datetime) -> str | None:
+        return _utc_iso(dt)
 
 
 class ChatRequest(BaseModel):
@@ -115,6 +138,10 @@ class InviteOut(BaseModel):
     role: str
     token: str
     accepted_at: datetime | None
+
+    @field_serializer("accepted_at")
+    def _ser_accepted_at(self, dt: datetime | None) -> str | None:
+        return _utc_iso(dt)
 
 
 class MemberRoleUpdate(BaseModel):

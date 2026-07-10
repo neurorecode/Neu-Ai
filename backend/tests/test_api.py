@@ -55,6 +55,12 @@ def test_health(client):
     assert body["stt_provider"] == "mock"
 
 
+def test_created_at_is_utc(completed_meeting):
+    # Must carry an explicit UTC offset, else browsers parse it as local time.
+    ts = completed_meeting["created_at"]
+    assert ts.endswith("+00:00") or ts.endswith("Z"), ts
+
+
 def test_full_pipeline(completed_meeting, client):
     detail = completed_meeting
     assert detail["progress"] == 100
