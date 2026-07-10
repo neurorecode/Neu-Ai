@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     anthropic_api_key: str = ""
-    anthropic_model: str = "claude-opus-4-8"
+    anthropic_model: str = "claude-sonnet-5"
 
     stt_provider: str = "mock"  # mock | sarvam | openai | local
     sarvam_api_key: str = ""
