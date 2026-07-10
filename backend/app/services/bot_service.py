@@ -100,10 +100,23 @@ async def handle_bot_update(
     if not needs_processing:
         return
 
-    # First time reaching 'done' — fetch, download, enqueue.
+    # First time reaching 'done' — fetch, download, enqueue. The download URL
+    # can lag the 'done' status by a few seconds, so retry a handful of times.
     try:
         provider = get_bot_provider()
-        recording = await provider.fetch_recording(provider_bot_id)
+        recording = None
+        for attempt in range(6):
+            try:
+                recording = await provider.fetch_recording(provider_bot_id)
+                break
+            except Exception as fetch_exc:
+                if attempt == 5:
+                    raise
+                logger.info(
+                    "Recording not ready for %s (attempt %d), retrying: %s",
+                    meeting_id, attempt + 1, fetch_exc,
+                )
+                await asyncio.sleep(10)
         audio_path = await download_recording(meeting_id, recording.audio_url, recording.audio_ext)
 
         db = SessionLocal()

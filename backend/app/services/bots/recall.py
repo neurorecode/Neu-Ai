@@ -20,19 +20,25 @@ from .base import BotHandle, BotProvider, BotRecording, BotStatus, SpeakerTurn
 
 logger = logging.getLogger("neu.bots.recall")
 
-# Recall status codes -> our normalized lifecycle
+# Recall status codes -> our normalized lifecycle.
+# NOTE: `call_ended` is NOT a failure — the call ended normally and Recall is
+# finalizing the recording; the terminal success status is `done`. Treat it as
+# still-in-progress so the poller keeps checking until the recording is ready.
 STATUS_MAP = {
+    "ready": "joining",
     "joining_call": "joining",
     "in_waiting_room": "joining",
     "in_call_not_recording": "joining",
     "recording_permission_allowed": "recording",
     "in_call_recording": "recording",
+    "call_ended": "recording",       # recording being finalized -> wait for done
     "recording_done": "done",
+    "analysis_done": "done",
     "done": "done",
-    "call_ended": "left",
     "fatal": "failed",
     "recording_permission_denied": "failed",
     "bot_rejected": "failed",
+    "media_expired": "failed",
 }
 
 

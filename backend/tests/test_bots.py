@@ -61,6 +61,17 @@ def test_webhook_rejects_bad_secret(client):
     assert resp.status_code == 403
 
 
+def test_recall_status_mapping():
+    """call_ended must NOT be a failure — it precedes the recording being ready."""
+    from app.services.bots.recall import STATUS_MAP
+
+    assert STATUS_MAP["call_ended"] == "recording"  # keep polling, don't fail
+    assert STATUS_MAP["in_call_recording"] == "recording"
+    assert STATUS_MAP["done"] == "done"
+    assert STATUS_MAP["fatal"] == "failed"
+    assert STATUS_MAP["bot_rejected"] == "failed"
+
+
 def test_platform_detection():
     from app.routers.bots import _platform
 
