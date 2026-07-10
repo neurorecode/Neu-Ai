@@ -641,6 +641,81 @@ input[type="text"]:focus {
   padding: 8px 0;
 }
 
+/* ---------- Ask across meetings ---------- */
+.ask-link {
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  margin: 4px 0;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-hover);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ask-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.ask-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 760px;
+}
+
+.ask-input {
+  display: flex;
+  gap: 8px;
+}
+
+.ask-input input {
+  flex: 1;
+}
+
+.ask-result {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ask-question {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.ask-answer {
+  white-space: pre-wrap;
+  line-height: 1.6;
+  max-width: 100%;
+}
+
+.ask-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.source-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-hover);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.source-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .chat-input input {
   flex: 1;
 }

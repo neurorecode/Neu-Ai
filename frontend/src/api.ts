@@ -1,4 +1,5 @@
 import type {
+  AskResponse,
   CalendarEvent,
   CalendarStatus,
   ChatMessage,
@@ -136,6 +137,13 @@ export const api = {
 
   search: (q: string) =>
     request<SearchHit[]>(`/api/meetings/search?q=${encodeURIComponent(q)}`),
+
+  ask: (question: string, workspaceId?: string) =>
+    request<AskResponse>("/api/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, workspace_id: workspaceId }),
+    }),
 
   getChat: (meetingId: string) =>
     request<ChatMessage[]>(`/api/meetings/${meetingId}/chat`),

@@ -73,6 +73,17 @@ export interface ChatMessage {
   created_at: string;
 }
 
+export interface AskSource {
+  meeting_id: string;
+  title: string;
+  date: string;
+}
+
+export interface AskResponse {
+  answer: string;
+  sources: AskSource[];
+}
+
 export interface User {
   id: string;
   email: string;

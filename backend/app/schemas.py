@@ -151,3 +151,19 @@ class SearchHit(BaseModel):
     segment_id: str | None
     snippet: str
     start: float | None
+
+
+class AskRequest(BaseModel):
+    question: str
+    workspace_id: str | None = None
+
+
+class AskSource(BaseModel):
+    meeting_id: str
+    title: str
+    date: str
+
+
+class AskResponse(BaseModel):
+    answer: str
+    sources: list[AskSource]

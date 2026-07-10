@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "./api";
 import type { Meeting, User, Workspace } from "./types";
+import { AskPanel } from "./components/AskPanel";
 import { CalendarPanel } from "./components/CalendarPanel";
 import { InviteBotBar } from "./components/InviteBotBar";
 import { LoginScreen } from "./components/LoginScreen";
@@ -16,6 +17,7 @@ type View =
   | { kind: "meeting"; id: string }
   | { kind: "settings" }
   | { kind: "calendar" }
+  | { kind: "ask" }
   | { kind: "home" };
 
 export default function App() {
@@ -146,6 +148,13 @@ function AuthedApp() {
         )}
         <SearchBar onSelect={(id) => setView({ kind: "meeting", id })} />
 
+        <button
+          className="ask-link"
+          onClick={() => setView({ kind: "ask" })}
+        >
+          ✨ Ask across all meetings
+        </button>
+
         {error && <div className="error-banner">{error}</div>}
 
         <MeetingList
@@ -172,6 +181,13 @@ function AuthedApp() {
           <CalendarPanel
             workspaceId={workspaceId ?? undefined}
             onJoined={refreshMeetings}
+            onClose={() => setView({ kind: "home" })}
+          />
+        )}
+        {view.kind === "ask" && (
+          <AskPanel
+            workspaceId={workspaceId ?? undefined}
+            onOpenMeeting={(id) => setView({ kind: "meeting", id })}
             onClose={() => setView({ kind: "home" })}
           />
         )}
