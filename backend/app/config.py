@@ -44,6 +44,18 @@ class Settings(BaseSettings):
     sarvam_chunk_seconds: float = 29.0
     openai_chunk_seconds: float = 600.0
 
+    # STT concurrency & retry. Long meetings fan out into hundreds of chunk
+    # requests; too many at once trips the provider's rate limit (HTTP 429).
+    # Keep concurrency modest and retry patiently (honouring Retry-After).
+    stt_concurrency: int = 3
+    stt_max_retries: int = 6
+    stt_backoff_base: float = 2.0
+    stt_backoff_max: float = 30.0
+    # If a chunk still fails after all retries, skip it and keep the rest of
+    # the transcript rather than failing the whole meeting — unless more than
+    # this fraction of chunks fail (then the run is treated as failed).
+    stt_max_failed_fraction: float = 0.15
+
     database_url: str = "sqlite:///./data/neu.db"
     upload_dir: str = "./data/uploads"
 

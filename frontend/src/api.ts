@@ -136,6 +136,9 @@ export const api = {
   resummarize: (meetingId: string) =>
     request<Meeting>(`/api/meetings/${meetingId}/resummarize`, { method: "POST" }),
 
+  reprocess: (meetingId: string) =>
+    request<Meeting>(`/api/meetings/${meetingId}/reprocess`, { method: "POST" }),
+
   search: (q: string) =>
     request<SearchHit[]>(`/api/meetings/search?q=${encodeURIComponent(q)}`),
 

@@ -107,7 +107,23 @@ export function MeetingView({
 
       {meeting.status === "failed" && (
         <div className="error-banner">
-          Processing failed: {meeting.error ?? "unknown error"}
+          <div>Processing failed: {meeting.error ?? "unknown error"}</div>
+          {canEdit && (
+            <button
+              className="btn"
+              style={{ marginTop: 10 }}
+              onClick={async () => {
+                try {
+                  await api.reprocess(meeting.id);
+                  setMeeting({ ...meeting, status: "uploaded", progress: 0, stage: "Queued", error: null });
+                } catch (e) {
+                  setError((e as Error).message);
+                }
+              }}
+            >
+              ↻ Retry processing
+            </button>
+          )}
         </div>
       )}
       {meeting.status === "completed" && meeting.error && (
