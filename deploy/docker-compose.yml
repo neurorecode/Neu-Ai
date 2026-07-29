@@ -41,6 +41,8 @@ services:
       RECALL_REGION: ${RECALL_REGION:-us-west-2}
       BOT_NAME: ${BOT_NAME:-Neu AI Notetaker}
       WEBHOOK_SECRET: ${WEBHOOK_SECRET:-changeme-webhook-secret}
+      SELFBOT_URL: ${SELFBOT_URL:-}
+      SELFBOT_TOKEN: ${SELFBOT_TOKEN:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
@@ -50,6 +52,22 @@ services:
       AUDIO_RETENTION_DAYS: ${AUDIO_RETENTION_DAYS:-0}
     volumes:
       - uploads:/data/uploads
+
+  # Your own meeting bot (BOT_PROVIDER=selfhosted). Phase 1 runs in mock mode —
+  # no browser — so the whole invite -> record -> transcribe path works without
+  # Recall.ai. Enable by setting BOT_PROVIDER=selfhosted + SELFBOT_URL=http://selfbot:8080
+  # in deploy/.env, then: docker compose up -d --build selfbot
+  selfbot:
+    build: ../selfbot
+    restart: unless-stopped
+    environment:
+      SELFBOT_MODE: ${SELFBOT_MODE:-mock}
+      SELFBOT_TOKEN: ${SELFBOT_TOKEN:-}
+      SELFBOT_PUBLIC_URL: ${SELFBOT_URL:-http://selfbot:8080}
+    volumes:
+      # Mock mode hands back this demo recording. Phase 2 (real browser bot)
+      # won't need it.
+      - ../backend/tests/data/demo_meeting.wav:/data/demo_meeting.wav:ro
 
   web:
     build: ../frontend

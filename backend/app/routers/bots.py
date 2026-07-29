@@ -42,8 +42,9 @@ async def invite_bot(
     if not bots_enabled():
         raise HTTPException(
             400,
-            "Meeting bot is not configured. Set BOT_PROVIDER=recall and RECALL_API_KEY "
-            "(see DEPLOY.md) to let Neu auto-join calls.",
+            "Meeting bot is not configured. Set BOT_PROVIDER=recall + RECALL_API_KEY, "
+            "or BOT_PROVIDER=selfhosted + SELFBOT_URL (your own worker; see selfbot/README.md) "
+            "to let Neu auto-join calls.",
         )
     meeting_url = body.meeting_url.strip()
     platform = _platform(meeting_url)

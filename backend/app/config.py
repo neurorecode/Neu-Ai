@@ -23,12 +23,23 @@ class Settings(BaseSettings):
 
     # ---- Meeting bot (auto-join Meet/Zoom/Teams) ----
     # none | recall (Recall.ai — one API for all three platforms)
+    #      | selfhosted (your own bot worker; no per-hour Recall charge)
     bot_provider: str = "none"
     recall_api_key: str = ""
     recall_region: str = "us-west-2"
     bot_name: str = "Neu AI Notetaker"
     # Shared secret in the webhook path so only Recall can post to it
     webhook_secret: str = "changeme-webhook-secret"
+
+    # ---- Self-hosted meeting bot (BOT_PROVIDER=selfhosted) ----
+    # Base URL of your own bot worker (see selfbot/). Neu talks to it over a
+    # tiny HTTP contract instead of paying Recall per recording-hour. Empty =
+    # self-hosted bot disabled.
+    selfbot_url: str = ""
+    # Optional bearer token the backend sends to the worker (must match the
+    # worker's SELFBOT_TOKEN). Empty = no auth (private network only).
+    selfbot_token: str = ""
+    selfbot_timeout: float = 30.0
 
     # ---- Email recap (SMTP) ----
     # When smtp_host is empty, recaps are logged to the console instead of sent.
